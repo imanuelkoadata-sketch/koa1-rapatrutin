@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth"; // <-- Pastikan baris ini ada
+// Gunakan fungsi baru dari firestore
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 // TODO: Ganti nilai di bawah ini dengan konfigurasi Firebase Anda
 const firebaseConfig = {
@@ -13,6 +14,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
+});
 
-export const db = getFirestore(app);
 export const auth = getAuth(app); // <-- Baris penentu yang menghilangkan layar putih
+
+export { db };
