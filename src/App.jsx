@@ -18,29 +18,28 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState('guest'); 
   const [isAuthChecking, setIsAuthChecking] = useState(true);
-
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState('dashboard'); 
-
+  const [currentView, setCurrentView] = useState('dashboard');
+  
   const [periodeBulan, setPeriodeBulan] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
-
+  
   const [isDataLoading, setIsDataLoading] = useState(false);
+  const [isConfigLoading, setIsConfigLoading] = useState(false); // STATE BARU UNTUK LOADING KONFIGURASI
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [catatanKalender, setCatatanKalender] = useState({});
 
   // --- STATE KONFIGURASI GLOBAL ---
   const [profilGereja, setProfilGereja] = useState({ induk: 'Gereja Masehi Injili di Timor (GMIT)', klasis: 'Mollo Barat', jemaat: 'Imanuel Koa' });
-  
   const [profilMJH, setProfilMJH] = useState({ 
     ketua: '', 
     sekretaris: '', 
     bendahara: '',
     pengurusMJ: {} 
   });
-  
   const [mataJemaatList, setMataJemaatList] = useState([{ id: 1, nama: 'Imanuel Koa' }, { id: 2, nama: 'Syalom Haususu' }]);
   const [kategoriPelayananList, setKategoriPelayananList] = useState([
     { id: 1, nama: 'Rayon 1', mataJemaat: 'Imanuel Koa' }, { id: 2, nama: 'Rayon 2', mataJemaat: 'Imanuel Koa' },
@@ -50,13 +49,12 @@ function App() {
 
   // --- STATE FORM LAPORAN ---
   const [tanggalRapat, setTanggalRapat] = useState(periodeBulan + '-01');
-  const [tempatRapat, setTempatRapat] = useState('Mollo Barat'); 
+  const [tempatRapat, setTempatRapat] = useState('Mollo Barat');
   const [pelayanPA, setPelayanPA] = useState('');
   const [bacaanPA, setBacaanPA] = useState('');
   const [temaPA, setTemaPA] = useState('');
   
   const [kehadiranMajelis, setKehadiranMajelis] = useState([]);
-  
   const [pembahasanList, setPembahasanList] = useState([{ id: 1, pembahasan: '', keputusan: '' }]);
   const [warnaSariList, setWarnaSariList] = useState([{ id: 2, pembahasan: '', keputusan: '' }]);
 
@@ -91,6 +89,7 @@ function App() {
   const [kendalainfosWabend, setKendalainfosWabend] = useState(['']);
   const [kendalainfosWabend1, setKendalainfosWabend1] = useState(['']);
 
+  // HOOK AUTHENTICATION
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -112,9 +111,12 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Ambil Konfigurasi Master
+  // PERBAIKAN 1: Ambil Konfigurasi Master (Tunggu sampai login)
   useEffect(() => {
     const fetchKonfigurasi = async () => {
+      if (!currentUser) return; // Cegah error permission sebelum login selesai
+
+      setIsConfigLoading(true);
       try {
         const docSnap = await getDoc(doc(db, "konfigurasi", "utama"));
         if (docSnap.exists()) {
@@ -124,14 +126,20 @@ function App() {
           if (data.mataJemaatList) setMataJemaatList(data.mataJemaatList);
           if (data.kategoriPelayananList) setKategoriPelayananList(data.kategoriPelayananList);
         }
-      } catch (error) { console.error(error); }
+      } catch (error) { 
+        console.error("Gagal mengambil konfigurasi master:", error); 
+      } finally {
+        setIsConfigLoading(false);
+      }
     };
     fetchKonfigurasi();
-  }, []);
+  }, [currentUser]);
 
-  // Ambil Laporan Bulanan
+  // PERBAIKAN 2: Ambil Laporan Bulanan (Tunggu sampai login, struktur try-catch diperbaiki)
   useEffect(() => {
     const fetchLaporanBulanan = async () => {
+      if (!currentUser) return; // Cegah error permission sebelum login selesai
+
       setIsDataLoading(true);
       try {
         const docSnap = await getDoc(doc(db, "laporan_evaluasi", periodeBulan));
@@ -166,7 +174,8 @@ function App() {
           if (d.kendalainfosWabend1) setKendalainfosWabend1(d.kendalainfosWabend1);
         } else {
           // JIKA BULAN BARU BELUM ADA LAPORAN (Reset State)
-          setTanggalRapat(periodeBulan + '-01'); setPelayanPA(''); setBacaanPA(''); setTemaPA('');
+          setTanggalRapat(periodeBulan + '-01');
+          setPelayanPA(''); setBacaanPA(''); setTemaPA('');
           setKehadiranMajelis([]); // Akan diisi otomatis dari hook sinkronisasi profilMJH
           setPembahasanList([{ id: 1, pembahasan: '', keputusan: '' }]);
           setWarnaSariList([{ id: 2, pembahasan: '', keputusan: '' }]);
@@ -177,21 +186,27 @@ function App() {
           setAgendasMJ(['']); setKeputusansMJ(['']); setKendalainfosWK(['']); setKehadiranJemaat([]);
           setPersembahanWasek([{ id: 1, tanggal: '', pemberi: '', jenis: '' }]);
           setPelayananKhusus([{ id: 2, tanggal: '', jenis: '' }]); setKendalainfosWasek(['']); setPemimpinKebaktian([]);
-          setKendalainfosWasek1(['']); setKasKeuangan({ lalu: 0, terima: 0, keluar: 0, sisa: 0 });
-          setSaldoLaluNatura([{ id: 1, uraian: '', jumlah: '', satuan: '' }]); setPenerimaanNatura([{ id: 2, uraian: '', jumlah: '', satuan: '' }]);
-          setPengeluaranNatura([{ id: 3, uraian: '', jumlah: '', satuan: '' }]); setSisaSaldoNatura([{ id: 4, uraian: '', jumlah: '', satuan: '' }]);
+          setKendalainfosWasek1(['']);
+          setKasKeuangan({ lalu: 0, terima: 0, keluar: 0, sisa: 0 });
+          setSaldoLaluNatura([{ id: 1, uraian: '', jumlah: '', satuan: '' }]);
+          setPenerimaanNatura([{ id: 2, uraian: '', jumlah: '', satuan: '' }]);
+          setPengeluaranNatura([{ id: 3, uraian: '', jumlah: '', satuan: '' }]);
+          setSisaSaldoNatura([{ id: 4, uraian: '', jumlah: '', satuan: '' }]);
           setKendalainfosWabend(['']); setKendalainfosWabend1(['']);
           setBukuAdmin(bukuAdmin.map(b => ({ ...b, checked: false })));
           setRealisasiPelayanan(kategoriPelayananList.map(k => ({ ...k, realisasi: '' })));
         }
-      } catch (err) { console.error(err); }
-      finally { setIsDataLoading(false); }
+      } catch (err) { 
+        console.error(err);
+      } finally { 
+        setIsDataLoading(false); 
+      }
     };
     
     fetchLaporanBulanan();
-  }, [periodeBulan]);
+  }, [periodeBulan, currentUser]);
 
-  // HOOK SINKRONISASI PINTAR: Update otomatis jika Konfigurasi berubah, tanpa hapus centang
+  // HOOK SINKRONISASI PINTAR
   useEffect(() => {
     if (!isDataLoading && profilMJH) {
       const names = new Set();
@@ -215,16 +230,14 @@ function App() {
       if (uniqueNames.length > 0) {
         setKehadiranMajelis(prevKehadiran => {
           const currentNames = prevKehadiran.map(m => m.nama);
-          
           // Cek apakah susunan nama sudah sama persis antara Konfigurasi vs Data Saat Ini
           const isSame = uniqueNames.length === currentNames.length && 
                          uniqueNames.every((name, i) => name === currentNames[i]);
-                         
+          
           if (isSame) return prevKehadiran; // Jika sudah sama, batalkan update (cegah loop)
           
           // Jika ada perbedaan, perbarui daftar nama sesuai konfigurasi baru
           return uniqueNames.map((nama, index) => {
-            // Cari apakah orang ini sudah ada di state sebelumnya
             const existing = prevKehadiran.find(m => m.nama === nama);
             return {
               id: existing ? existing.id : index + 1, // Pertahankan ID lama jika ada
@@ -235,7 +248,7 @@ function App() {
         });
       }
     }
-  }, [profilMJH, isDataLoading]); // Hapus 'kehadiranMajelis.length' dari kurung ini
+  }, [profilMJH, isDataLoading]);
 
   const handleSimpanLaporanBulanan = async () => {
     try {
@@ -245,6 +258,7 @@ function App() {
         kehadiranJemaat, realisasiPelayanan, persembahanWasek, pelayananKhusus, kendalainfosWasek, pemimpinKebaktian, bukuAdmin, kendalainfosWasek1,
         kasKeuangan, saldoLaluNatura, penerimaanNatura, pengeluaranNatura, sisaSaldoNatura, kendalainfosWabend, kendalainfosWabend1
       };
+      
       const cleanData = JSON.parse(JSON.stringify(rawData));
       await setDoc(doc(db, "laporan_evaluasi", periodeBulan), cleanData);
       alert(`Puji Tuhan! Laporan Evaluasi Pelayanan untuk bulan [${periodeBulan}] berhasil aman tersimpan.`);
@@ -263,7 +277,10 @@ function App() {
       <Sidebar setCurrentView={setCurrentView} userRole={userRole} />
       <main className="flex-1 flex flex-col overflow-hidden">
         <Topbar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} setCurrentView={setCurrentView} userRole={userRole} periodeBulan={periodeBulan} setPeriodeBulan={setPeriodeBulan} />
+        
+        {/* PERBAIKAN 3: INDIKATOR LOADING */}
         {isDataLoading && (<div className="bg-amber-50 text-amber-700 text-xs px-4 py-2 font-bold text-center border-b border-amber-200 animate-pulse print:hidden">Sedang memuat sinkronisasi data dengan server cloud...</div>)}
+        {isConfigLoading && (<div className="bg-blue-50 text-blue-700 text-xs px-4 py-2 font-bold text-center border-b border-blue-200 animate-pulse print:hidden">Menyinkronkan Konfigurasi Master dari Cloud...</div>)}
 
         {currentView === 'login' && <LoginAdmin setCurrentView={setCurrentView} />}
         {currentView === 'dashboard' && <DashboardContent currentDate={currentDate} setCurrentDate={setCurrentDate} catatanKalender={catatanKalender} pembahasanList={pembahasanList} warnaSariList={warnaSariList} />}
@@ -297,7 +314,7 @@ function App() {
             kategoriPelayananList={kategoriPelayananList} setKategoriPelayananList={setKategoriPelayananList}
           />
         )}
-        
+         
         {currentView === 'kalender' && <KalenderPelayanan userRole={userRole} currentDate={currentDate} setCurrentDate={setCurrentDate} catatanKalender={catatanKalender} setCatatanKalender={setCatatanKalender} />}
         {currentView === 'agenda' && userRole !== 'guest' && <Agenda userRole={userRole} periodeBulan={periodeBulan} />}
         
