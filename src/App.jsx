@@ -13,6 +13,7 @@ import Konfigurasi from './components/Konfigurasi';
 import KalenderPelayanan from './components/KalenderPelayanan';
 import Agenda from './components/Agenda';
 import CetakEvaluasi from './components/CetakEvaluasi';
+import PusatTautan from './components/PusatTautan';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -20,19 +21,15 @@ function App() {
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState('dashboard');
-  
   const [periodeBulan, setPeriodeBulan] = useState(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
-  
   const [isDataLoading, setIsDataLoading] = useState(false);
-  const [isConfigLoading, setIsConfigLoading] = useState(false); // STATE BARU UNTUK LOADING KONFIGURASI
+  const [isConfigLoading, setIsConfigLoading] = useState(false);
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [catatanKalender, setCatatanKalender] = useState({});
-
-  // --- STATE KONFIGURASI GLOBAL ---
   const [profilGereja, setProfilGereja] = useState({ induk: 'Gereja Masehi Injili di Timor (GMIT)', klasis: 'Mollo Barat', jemaat: 'Imanuel Koa' });
   const [profilMJH, setProfilMJH] = useState({ 
     ketua: '', 
@@ -47,7 +44,6 @@ function App() {
     { id: 5, nama: 'Pemuda', mataJemaat: 'Syalom Haususu' }, { id: 6, nama: 'PART', mataJemaat: 'Syalom Haususu' },
   ]);
 
-  // --- STATE FORM LAPORAN ---
   const [tanggalRapat, setTanggalRapat] = useState(periodeBulan + '-01');
   const [tempatRapat, setTempatRapat] = useState('Mollo Barat');
   const [pelayanPA, setPelayanPA] = useState('');
@@ -89,7 +85,6 @@ function App() {
   const [kendalainfosWabend, setKendalainfosWabend] = useState(['']);
   const [kendalainfosWabend1, setKendalainfosWabend1] = useState(['']);
 
-  // HOOK AUTHENTICATION
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -111,10 +106,9 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // PERBAIKAN 1: Ambil Konfigurasi Master (Tunggu sampai login)
   useEffect(() => {
     const fetchKonfigurasi = async () => {
-      if (!currentUser) return; // Cegah error permission sebelum login selesai
+      if (!currentUser) return; 
 
       setIsConfigLoading(true);
       try {
@@ -135,10 +129,9 @@ function App() {
     fetchKonfigurasi();
   }, [currentUser]);
 
-  // PERBAIKAN 2: Ambil Laporan Bulanan (Tunggu sampai login, struktur try-catch diperbaiki)
   useEffect(() => {
     const fetchLaporanBulanan = async () => {
-      if (!currentUser) return; // Cegah error permission sebelum login selesai
+      if (!currentUser) return; 
 
       setIsDataLoading(true);
       try {
@@ -158,7 +151,7 @@ function App() {
           if (d.keputusansMJ) setKeputusansMJ(d.keputusansMJ);
           if (d.kendalainfosWK) setKendalainfosWK(d.kendalainfosWK);
           if (d.kehadiranJemaat) setKehadiranJemaat(d.kehadiranJemaat);
-          if (d.realisasiPelayanan) setRealisasiPelayanan(d.realisasiPelayanan); 
+          if (d.realisasiPelayanan) setRealisasiPelayanan(d.realisasiPelayanan);
           if (d.persembahanWasek) setPersembahanWasek(d.persembahanWasek);
           if (d.pelayananKhusus) setPelayananKhusus(d.pelayananKhusus);
           if (d.kendalainfosWasek) setKendalainfosWasek(d.kendalainfosWasek);
@@ -173,10 +166,9 @@ function App() {
           if (d.kendalainfosWabend) setKendalainfosWabend(d.kendalainfosWabend);
           if (d.kendalainfosWabend1) setKendalainfosWabend1(d.kendalainfosWabend1);
         } else {
-          // JIKA BULAN BARU BELUM ADA LAPORAN (Reset State)
           setTanggalRapat(periodeBulan + '-01');
           setPelayanPA(''); setBacaanPA(''); setTemaPA('');
-          setKehadiranMajelis([]); // Akan diisi otomatis dari hook sinkronisasi profilMJH
+          setKehadiranMajelis([]); 
           setPembahasanList([{ id: 1, pembahasan: '', keputusan: '' }]);
           setWarnaSariList([{ id: 2, pembahasan: '', keputusan: '' }]);
           setKehadiranWK([]);
@@ -206,15 +198,12 @@ function App() {
     fetchLaporanBulanan();
   }, [periodeBulan, currentUser]);
 
-  // HOOK SINKRONISASI PINTAR
   useEffect(() => {
     if (!isDataLoading && profilMJH) {
       const names = new Set();
       
-      // Masukkan Ketua Majelis
       if (profilMJH.ketua) names.add(profilMJH.ketua);
       
-      // Loop semua jabatan Wakil di Mata Jemaat
       if (profilMJH.pengurusMJ) {
         Object.values(profilMJH.pengurusMJ).forEach(mj => {
           if (mj.wakilKetua) names.add(mj.wakilKetua);
@@ -225,24 +214,21 @@ function App() {
         });
       }
       
-      const uniqueNames = Array.from(names).filter(Boolean); // Hapus jika kosong
+      const uniqueNames = Array.from(names).filter(Boolean); 
       
       if (uniqueNames.length > 0) {
         setKehadiranMajelis(prevKehadiran => {
           const currentNames = prevKehadiran.map(m => m.nama);
-          // Cek apakah susunan nama sudah sama persis antara Konfigurasi vs Data Saat Ini
           const isSame = uniqueNames.length === currentNames.length && 
                          uniqueNames.every((name, i) => name === currentNames[i]);
+          if (isSame) return prevKehadiran; 
           
-          if (isSame) return prevKehadiran; // Jika sudah sama, batalkan update (cegah loop)
-          
-          // Jika ada perbedaan, perbarui daftar nama sesuai konfigurasi baru
           return uniqueNames.map((nama, index) => {
             const existing = prevKehadiran.find(m => m.nama === nama);
             return {
-              id: existing ? existing.id : index + 1, // Pertahankan ID lama jika ada
+              id: existing ? existing.id : index + 1,
               nama: nama,
-              hadir: existing ? existing.hadir : false // Pertahankan status centangnya
+              hadir: existing ? existing.hadir : false 
             };
           });
         });
@@ -258,7 +244,6 @@ function App() {
         kehadiranJemaat, realisasiPelayanan, persembahanWasek, pelayananKhusus, kendalainfosWasek, pemimpinKebaktian, bukuAdmin, kendalainfosWasek1,
         kasKeuangan, saldoLaluNatura, penerimaanNatura, pengeluaranNatura, sisaSaldoNatura, kendalainfosWabend, kendalainfosWabend1
       };
-      
       const cleanData = JSON.parse(JSON.stringify(rawData));
       await setDoc(doc(db, "laporan_evaluasi", periodeBulan), cleanData);
       alert(`Puji Tuhan! Laporan Evaluasi Pelayanan untuk bulan [${periodeBulan}] berhasil aman tersimpan.`);
@@ -274,11 +259,12 @@ function App() {
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-800 relative">
-      <Sidebar setCurrentView={setCurrentView} userRole={userRole} />
+      {/* PERBAIKAN DI BARIS INI: Menambahkan currentView={currentView} */}
+      <Sidebar setCurrentView={setCurrentView} currentView={currentView} userRole={userRole} />
+      
       <main className="flex-1 flex flex-col overflow-hidden">
-        <Topbar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} setCurrentView={setCurrentView} userRole={userRole} periodeBulan={periodeBulan} setPeriodeBulan={setPeriodeBulan} />
+        <Topbar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} setCurrentView={setCurrentView} currentView={currentView} userRole={userRole} periodeBulan={periodeBulan} setPeriodeBulan={setPeriodeBulan} />
         
-        {/* PERBAIKAN 3: INDIKATOR LOADING */}
         {isDataLoading && (<div className="bg-amber-50 text-amber-700 text-xs px-4 py-2 font-bold text-center border-b border-amber-200 animate-pulse print:hidden">Sedang memuat sinkronisasi data dengan server cloud...</div>)}
         {isConfigLoading && (<div className="bg-blue-50 text-blue-700 text-xs px-4 py-2 font-bold text-center border-b border-blue-200 animate-pulse print:hidden">Menyinkronkan Konfigurasi Master dari Cloud...</div>)}
 
@@ -314,7 +300,9 @@ function App() {
             kategoriPelayananList={kategoriPelayananList} setKategoriPelayananList={setKategoriPelayananList}
           />
         )}
-         
+
+        {currentView === 'pusattautan' && (<PusatTautan userRole={userRole} mataJemaatList={mataJemaatList} />)}
+        
         {currentView === 'kalender' && <KalenderPelayanan userRole={userRole} currentDate={currentDate} setCurrentDate={setCurrentDate} catatanKalender={catatanKalender} setCatatanKalender={setCatatanKalender} />}
         {currentView === 'agenda' && userRole !== 'guest' && <Agenda userRole={userRole} periodeBulan={periodeBulan} />}
         

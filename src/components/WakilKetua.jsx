@@ -10,25 +10,25 @@ export default function WakilKetua({
   keputusansMJ, setKeputusansMJ,
   kendalainfosWK, setKendalainfosWK
 }) {
-  // MASTER MATA JEMAAT (Jika nanti dari props parent, bisa diubah)
+  // MASTER MATA JEMAAT
   const mataJemaatList = ['Imanuel Koa', 'Syalom Haususu'];
   
   // STATE BARU: Mengingat pilihan dropdown Mata Jemaat
   const [activeMj, setActiveMj] = useState(mataJemaatList[0]);
 
   // ==========================================
-  // 1. PENGAMANAN STRUKTUR DATA (Mencegah Error)
+  // 1. PENGAMANAN STRUKTUR DATA
   // ==========================================
   const listKehadiran = Array.isArray(kehadiranWK) ? kehadiranWK : [];
   const listKegWilayah = Array.isArray(kegiatanWilayah) ? kegiatanWilayah : [];
   const listKegMJ = Array.isArray(kegiatanMataJemaat) ? kegiatanMataJemaat : [];
   const listRapat = Array.isArray(pelaksanaanRapatMJ) ? pelaksanaanRapatMJ : [];
 
-  // Konversi cerdas jika data sebelumnya string biasa menjadi objek
   const ensureObjectList = (list) => {
     if (!Array.isArray(list)) return [];
     return list.map((item, idx) => typeof item === 'string' ? { id: Date.now() + idx, mataJemaat: activeMj, text: item } : item);
   };
+  
   const listAgenda = ensureObjectList(agendasMJ);
   const listKeputusan = ensureObjectList(keputusansMJ);
   const listKendala = ensureObjectList(kendalainfosWK);
@@ -51,7 +51,6 @@ export default function WakilKetua({
   useEffect(() => {
     if (!bulanLaporan) return;
     
-    // Jangan timpa jika user sudah mengetik nama kebaktian di Mata Jemaat ini
     if (currentKehadiran.length > 0 && currentKehadiran[0].nama !== '') return;
 
     const [yearStr, monthStr] = bulanLaporan.split('-');
@@ -72,8 +71,8 @@ export default function WakilKetua({
       return { 
         id: Date.now() + index + Math.random(), 
         nama: `Minggu ${index + 1} (${tgl})`, 
-        penatua: '', diaken: '', pengajar: '', koster: '', 
-        mataJemaat: activeMj // <- PENANDA PENTING
+        penatua: '', diaken: '', pengajar: '', koster: '', jumlah: '', // <-- PERBAIKAN: Field jumlah ditambahkan
+        mataJemaat: activeMj
       };
     });
 
@@ -82,20 +81,21 @@ export default function WakilKetua({
   }, [bulanLaporan, activeMj]);
 
   // ==========================================
-  // 4. FUNGSI UPDATE DATA (Menyuntikkan Mata Jemaat)
+  // 4. FUNGSI UPDATE DATA
   // ==========================================
-  const tambahKehadiran = () => setKehadiranWK([...listKehadiran, { id: Date.now(), nama: '', penatua: '', diaken: '', pengajar: '', koster: '', mataJemaat: activeMj }]);
+  // PERBAIKAN: Pastikan 'jumlah' masuk saat tambah manual
+  const tambahKehadiran = () => setKehadiranWK([...listKehadiran, { id: Date.now(), nama: '', penatua: '', diaken: '', pengajar: '', koster: '', jumlah: '', mataJemaat: activeMj }]);
   const hapusKehadiran = (id) => setKehadiranWK(listKehadiran.filter(item => item.id !== id));
   const updateKehadiran = (id, field, value) => setKehadiranWK(listKehadiran.map(k => k.id === id ? {...k, [field]: value} : k));
-
+  
   const tambahKegiatanW = () => setKegiatanWilayah([...listKegWilayah, { id: Date.now(), tanggal: '', kegiatan: '', mataJemaat: activeMj }]);
   const hapusKegiatanW = (id) => setKegiatanWilayah(listKegWilayah.filter(item => item.id !== id));
   const updateKegiatanW = (id, field, value) => setKegiatanWilayah(listKegWilayah.map(k => k.id === id ? {...k, [field]: value} : k));
-
+  
   const tambahKegiatanM = () => setKegiatanMataJemaat([...listKegMJ, { id: Date.now(), tanggal: '', kegiatan: '', mataJemaat: activeMj }]);
   const hapusKegiatanM = (id) => setKegiatanMataJemaat(listKegMJ.filter(item => item.id !== id));
   const updateKegiatanM = (id, field, value) => setKegiatanMataJemaat(listKegMJ.map(k => k.id === id ? {...k, [field]: value} : k));
-
+  
   const updateRapat = (field, value) => {
     const exists = listRapat.some(r => r.mataJemaat === activeMj);
     if (exists) {
@@ -104,7 +104,7 @@ export default function WakilKetua({
         setPelaksanaanRapatMJ([...listRapat, { ...currentRapat, [field]: value }]);
     }
   };
-
+  
   const addListObj = (setList, fullList) => setList([...fullList, { id: Date.now() + Math.random(), mataJemaat: activeMj, text: '' }]);
   const updateListObj = (setList, fullList, id, text) => setList(fullList.map(item => item.id === id ? { ...item, text } : item));
   const removeListObj = (setList, fullList, id) => setList(fullList.filter(item => item.id !== id));
@@ -113,7 +113,7 @@ export default function WakilKetua({
   return (
     <div className="space-y-10">
       
-      {/* FILTER DROPDOWN: Kunci perubahan layar */}
+      {/* FILTER DROPDOWN */}
       <div className="w-full md:w-1/3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <label className="block text-sm font-bold text-blue-800 mb-2">Pilih Form Mata Jemaat</label>
         <select 
@@ -130,18 +130,24 @@ export default function WakilKetua({
         <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">A. Kehadiran Majelis (Bulan Lalu) - {activeMj}</h3>
         <div className="space-y-3">
           {currentKehadiran.map((item) => (
-            <div key={item.id} className="flex flex-col md:flex-row gap-2 items-start md:items-center bg-white p-3 border rounded-md shadow-sm">
-              <div className="w-full md:w-1/3">
+            <div key={item.id} className="flex flex-col xl:flex-row gap-2 items-start xl:items-center bg-white p-3 border rounded-md shadow-sm">
+              <div className="w-full xl:w-1/3">
                 <label className="block text-xs text-gray-500 mb-1">Nama Kebaktian / Tgl</label>
                 <input type="text" placeholder="Nama Kebaktian" value={item.nama} onChange={(e) => updateKehadiran(item.id, 'nama', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-medium" />
               </div>
-              <div className="flex-1 grid grid-cols-4 gap-2 w-full mt-2 md:mt-0">
+              
+              {/* PERBAIKAN: Ubah grid menjadi 3 kolom di HP, dan 5 kolom di layar besar agar muat tombol Jumlah */}
+              <div className="flex-1 grid grid-cols-3 md:grid-cols-5 gap-2 w-full mt-2 xl:mt-0">
                 <div><label className="block text-xs text-gray-500 mb-1">Penatua</label><input type="number" value={item.penatua} onChange={(e) => updateKehadiran(item.id, 'penatua', e.target.value)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"/></div>
                 <div><label className="block text-xs text-gray-500 mb-1">Diaken</label><input type="number" value={item.diaken} onChange={(e) => updateKehadiran(item.id, 'diaken', e.target.value)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"/></div>
                 <div><label className="block text-xs text-gray-500 mb-1">Pengajar</label><input type="number" value={item.pengajar} onChange={(e) => updateKehadiran(item.id, 'pengajar', e.target.value)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"/></div>
                 <div><label className="block text-xs text-gray-500 mb-1">Koster</label><input type="number" value={item.koster} onChange={(e) => updateKehadiran(item.id, 'koster', e.target.value)} className="w-full px-2 py-2 border border-gray-300 rounded-md text-sm"/></div>
+                
+                {/* KOTAK BARU: Jumlah */}
+                <div><label className="block text-xs font-bold text-gray-700 mb-1">Jumlah</label><input type="number" value={item.jumlah || ''} onChange={(e) => updateKehadiran(item.id, 'jumlah', e.target.value)} className="w-full px-2 py-2 border-2 border-gray-300 bg-gray-50 rounded-md text-sm font-bold text-gray-800"/></div>
               </div>
-              <button onClick={() => hapusKehadiran(item.id)} className="text-red-500 hover:bg-red-100 p-2 rounded-md shrink-0 mt-4 md:mt-0 self-end md:self-center">Hapus</button>
+              
+              <button onClick={() => hapusKehadiran(item.id)} className="text-red-500 hover:bg-red-100 p-2 rounded-md shrink-0 mt-2 xl:mt-0 self-end xl:self-center">Hapus</button>
             </div>
           ))}
           <button onClick={tambahKehadiran} className="mt-2 text-sm text-blue-600 font-bold hover:underline">+ Tambah Kebaktian Lainnya</button>
@@ -201,9 +207,7 @@ export default function WakilKetua({
           <label className="block text-sm font-bold text-gray-700 mb-2">Agenda & Keputusan Rapat</label>
           <div className="space-y-4">
             {currentAgenda.map((agenda, index) => {
-              // Mencari keputusan yang sebaris berdasarkan urutan (index)
               const keputusan = currentKeputusan[index] || { text: '' };
-              
               return (
                 <div key={agenda.id} className="flex flex-col md:flex-row items-start gap-3 bg-white p-3 border rounded-md shadow-sm">
                   <span className="mt-2 text-sm font-bold text-gray-500 w-6 text-right">{index + 1}.</span>
@@ -216,7 +220,7 @@ export default function WakilKetua({
                       <label className="block text-xs font-bold text-gray-500 mb-1">Keputusan / Hasil</label>
                       <input type="text" value={keputusan.text || ''} onChange={(e) => {
                           if (currentKeputusan[index]) {
-                             updateListObj(setKeputusansMJ, listKeputusan, currentKeputusan[index].id, e.target.value);
+                              updateListObj(setKeputusansMJ, listKeputusan, currentKeputusan[index].id, e.target.value);
                           }
                       }} placeholder="Ketik keputusan rapat..." className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" />
                     </div>
@@ -229,7 +233,6 @@ export default function WakilKetua({
               );
             })}
             <button onClick={() => {
-                // Menambah 1 baris kosong untuk Agenda sekaligus Keputusan
                 const newIdA = Date.now() + Math.random();
                 const newIdK = Date.now() + Math.random();
                 setAgendasMJ([...listAgenda, { id: newIdA, mataJemaat: activeMj, text: '' }]);
