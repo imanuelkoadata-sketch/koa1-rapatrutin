@@ -90,7 +90,23 @@ export default function CetakEvaluasi({
                 <tr><td className="w-40 py-0.5 font-medium">Tempat Pelaksanaan</td><td className="w-4">:</td><td>{tempatRapat || '-'}</td></tr>
                 <tr><td className="w-40 py-0.5 font-medium">Pelayan Ibadah PA</td><td className="w-4">:</td><td>{pelayanPA || '-'}</td></tr>
                 <tr><td className="w-40 py-0.5 font-medium">Tema / Bacaan</td><td className="w-4">:</td><td>{temaPA ? `${temaPA} (${bacaanPA})` : bacaanPA || '-'}</td></tr>
-                <tr><td className="w-40 py-0.5 font-medium align-top">Kehadiran Majelis</td><td className="w-4 align-top">:</td><td>{kehadiranMajelis?.filter(m => m.hadir).map(m => m.nama).join(', ') || '-'}</td></tr>
+                <tr>
+                  <td className="w-40 py-0.5 font-medium align-top">Kehadiran Majelis</td>
+                  <td className="w-4 align-top">:</td>
+                  <td className="py-0.5">
+                    {kehadiranMajelis && kehadiranMajelis.filter(m => m.hadir).length > 0 ? (
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                        {kehadiranMajelis.filter(m => m.hadir).map((m, idx) => (
+                          <div key={m.id} className="text-[12px] md:text-[13px] leading-snug">
+                            {idx + 1}. {m.nama}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </section>

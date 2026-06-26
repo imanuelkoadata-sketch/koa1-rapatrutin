@@ -34,8 +34,12 @@ function App() {
   // --- STATE KONFIGURASI GLOBAL ---
   const [profilGereja, setProfilGereja] = useState({ induk: 'Gereja Masehi Injili di Timor (GMIT)', klasis: 'Mollo Barat', jemaat: 'Imanuel Koa' });
   
-  // STATE BARU: Menyimpan Profil Pengurus MJH
-  const [profilMJH, setProfilMJH] = useState({ ketua: '', sekretaris: '' });
+  const [profilMJH, setProfilMJH] = useState({ 
+    ketua: '', 
+    sekretaris: '', 
+    bendahara: '',
+    pengurusMJ: {} 
+  });
   
   const [mataJemaatList, setMataJemaatList] = useState([{ id: 1, nama: 'Imanuel Koa' }, { id: 2, nama: 'Syalom Haususu' }]);
   const [kategoriPelayananList, setKategoriPelayananList] = useState([
@@ -44,16 +48,15 @@ function App() {
     { id: 5, nama: 'Pemuda', mataJemaat: 'Syalom Haususu' }, { id: 6, nama: 'PART', mataJemaat: 'Syalom Haususu' },
   ]);
 
+  // --- STATE FORM LAPORAN ---
   const [tanggalRapat, setTanggalRapat] = useState(periodeBulan + '-01');
   const [tempatRapat, setTempatRapat] = useState('Mollo Barat'); 
   const [pelayanPA, setPelayanPA] = useState('');
   const [bacaanPA, setBacaanPA] = useState('');
   const [temaPA, setTemaPA] = useState('');
-  const [kehadiranMajelis, setKehadiranMajelis] = useState([
-    { id: 1, nama: 'Pnt. Feronika Toto', hadir: true }, { id: 2, nama: 'Pnt. Fony Oematan', hadir: true },
-    { id: 3, nama: 'Pnt. Libernio Nitbani', hadir: true }, { id: 4, nama: 'Pnt. Erni Isu', hadir: false },
-    { id: 5, nama: 'Pnt. Denihas Tasekeb', hadir: true }, { id: 6, nama: 'Pnt. Agripa Lo’o', hadir: false },
-  ]);
+  
+  const [kehadiranMajelis, setKehadiranMajelis] = useState([]);
+  
   const [pembahasanList, setPembahasanList] = useState([{ id: 1, pembahasan: '', keputusan: '' }]);
   const [warnaSariList, setWarnaSariList] = useState([{ id: 2, pembahasan: '', keputusan: '' }]);
 
@@ -109,6 +112,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Ambil Konfigurasi Master
   useEffect(() => {
     const fetchKonfigurasi = async () => {
       try {
@@ -116,7 +120,7 @@ function App() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.profilGereja) setProfilGereja(data.profilGereja);
-          if (data.profilMJH) setProfilMJH(data.profilMJH); // <-- MENGAMBIL DATA MJH DARI FIREBASE
+          if (data.profilMJH) setProfilMJH(data.profilMJH); 
           if (data.mataJemaatList) setMataJemaatList(data.mataJemaatList);
           if (data.kategoriPelayananList) setKategoriPelayananList(data.kategoriPelayananList);
         }
@@ -125,6 +129,7 @@ function App() {
     fetchKonfigurasi();
   }, []);
 
+  // Ambil Laporan Bulanan
   useEffect(() => {
     const fetchLaporanBulanan = async () => {
       setIsDataLoading(true);
@@ -160,7 +165,9 @@ function App() {
           if (d.kendalainfosWabend) setKendalainfosWabend(d.kendalainfosWabend);
           if (d.kendalainfosWabend1) setKendalainfosWabend1(d.kendalainfosWabend1);
         } else {
+          // JIKA BULAN BARU BELUM ADA LAPORAN (Reset State)
           setTanggalRapat(periodeBulan + '-01'); setPelayanPA(''); setBacaanPA(''); setTemaPA('');
+          setKehadiranMajelis([]); // Akan diisi otomatis dari hook sinkronisasi profilMJH
           setPembahasanList([{ id: 1, pembahasan: '', keputusan: '' }]);
           setWarnaSariList([{ id: 2, pembahasan: '', keputusan: '' }]);
           setKehadiranWK([]);
@@ -183,6 +190,52 @@ function App() {
     
     fetchLaporanBulanan();
   }, [periodeBulan]);
+
+  // HOOK SINKRONISASI PINTAR: Update otomatis jika Konfigurasi berubah, tanpa hapus centang
+  useEffect(() => {
+    if (!isDataLoading && profilMJH) {
+      const names = new Set();
+      
+      // Masukkan Ketua Majelis
+      if (profilMJH.ketua) names.add(profilMJH.ketua);
+      
+      // Loop semua jabatan Wakil di Mata Jemaat
+      if (profilMJH.pengurusMJ) {
+        Object.values(profilMJH.pengurusMJ).forEach(mj => {
+          if (mj.wakilKetua) names.add(mj.wakilKetua);
+          if (mj.wakilSekretaris) names.add(mj.wakilSekretaris);
+          if (mj.wakilSekretaris1) names.add(mj.wakilSekretaris1);
+          if (mj.wakilBendahara) names.add(mj.wakilBendahara);
+          if (mj.wakilBendahara1) names.add(mj.wakilBendahara1);
+        });
+      }
+      
+      const uniqueNames = Array.from(names).filter(Boolean); // Hapus jika kosong
+      
+      if (uniqueNames.length > 0) {
+        setKehadiranMajelis(prevKehadiran => {
+          const currentNames = prevKehadiran.map(m => m.nama);
+          
+          // Cek apakah susunan nama sudah sama persis antara Konfigurasi vs Data Saat Ini
+          const isSame = uniqueNames.length === currentNames.length && 
+                         uniqueNames.every((name, i) => name === currentNames[i]);
+                         
+          if (isSame) return prevKehadiran; // Jika sudah sama, batalkan update (cegah loop)
+          
+          // Jika ada perbedaan, perbarui daftar nama sesuai konfigurasi baru
+          return uniqueNames.map((nama, index) => {
+            // Cari apakah orang ini sudah ada di state sebelumnya
+            const existing = prevKehadiran.find(m => m.nama === nama);
+            return {
+              id: existing ? existing.id : index + 1, // Pertahankan ID lama jika ada
+              nama: nama,
+              hadir: existing ? existing.hadir : false // Pertahankan status centangnya
+            };
+          });
+        });
+      }
+    }
+  }, [profilMJH, isDataLoading]); // Hapus 'kehadiranMajelis.length' dari kurung ini
 
   const handleSimpanLaporanBulanan = async () => {
     try {
@@ -239,7 +292,7 @@ function App() {
         {currentView === 'konfigurasi' && userRole === 'admin' && (
           <Konfigurasi 
             profilGereja={profilGereja} setProfilGereja={setProfilGereja} 
-            profilMJH={profilMJH} setProfilMJH={setProfilMJH} // <-- MENGIRIM DATA KE FORM KONFIGURASI
+            profilMJH={profilMJH} setProfilMJH={setProfilMJH}
             mataJemaatList={mataJemaatList} setMataJemaatList={setMataJemaatList} 
             kategoriPelayananList={kategoriPelayananList} setKategoriPelayananList={setKategoriPelayananList}
           />
@@ -250,7 +303,7 @@ function App() {
         
         {currentView === 'cetak' && (
           <CetakEvaluasi 
-            mataJemaatList={mataJemaatList} profilMJH={profilMJH} // <-- MENGIRIM NAMA KETUA & SEKRETARIS KE HALAMAN CETAK
+            mataJemaatList={mataJemaatList} profilMJH={profilMJH}
             periodeBulan={periodeBulan} tempatRapat={tempatRapat} tanggalRapat={tanggalRapat} profilGereja={profilGereja} pelayanPA={pelayanPA} bacaanPA={bacaanPA} temaPA={temaPA} kehadiranMajelis={kehadiranMajelis} pembahasanList={pembahasanList} warnaSariList={warnaSariList}
             kehadiranWK={kehadiranWK} kegiatanWilayah={kegiatanWilayah} kegiatanMataJemaat={kegiatanMataJemaat} pelaksanaanRapatMJ={pelaksanaanRapatMJ} agendasMJ={agendasMJ} keputusansMJ={keputusansMJ} kendalainfosWK={kendalainfosWK}
             kehadiranJemaat={kehadiranJemaat} realisasiPelayanan={realisasiPelayanan} persembahanWasek={persembahanWasek} pelayananKhusus={pelayananKhusus} kendalainfosWasek={kendalainfosWasek} pemimpinKebaktian={pemimpinKebaktian} bukuAdmin={bukuAdmin} kendalainfosWasek1={kendalainfosWasek1}

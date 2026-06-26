@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export default function Konfigurasi({ profilGereja, setProfilGereja, profilMJH, setProfilMJH, mataJemaatList, setMataJemaatList, kategoriPelayananList, setKategoriPelayananList }) {
+export default function Konfigurasi({ 
+  profilGereja, setProfilGereja, 
+  profilMJH, setProfilMJH, 
+  mataJemaatList, setMataJemaatList, 
+  kategoriPelayananList, setKategoriPelayananList
+}) {
   const [activeTab, setActiveTab] = useState('profil');
   const [isSaving, setIsSaving] = useState(false);
   
@@ -28,14 +33,28 @@ export default function Konfigurasi({ profilGereja, setProfilGereja, profilMJH, 
   const hapusKategori = (id) => setKategoriPelayananList(kategoriPelayananList.filter(k => k.id !== id));
   const updateKategori = (id, field, value) => setKategoriPelayananList(kategoriPelayananList.map(k => k.id === id ? { ...k, [field]: value } : k));
 
+  // Fungsi Update Struktur Pengurus Mata Jemaat (Nested Object)
+  const updatePengurusMJ = (mataJemaatNama, field, value) => {
+    setProfilMJH({
+      ...profilMJH,
+      pengurusMJ: {
+        ...profilMJH.pengurusMJ,
+        [mataJemaatNama]: {
+          ...(profilMJH.pengurusMJ?.[mataJemaatNama] || {}),
+          [field]: value
+        }
+      }
+    });
+  };
+
   const handleSimpanKonfigurasi = async () => {
     setIsSaving(true);
     try {
       await setDoc(doc(db, "konfigurasi", "utama"), {
         profilGereja: profilGereja,
-        profilMJH: profilMJH, // <-- MENYIMPAN DATA PENGURUS KE FIREBASE
+        profilMJH: profilMJH, 
         mataJemaatList: mataJemaatList,
-        kategoriPelayananList: kategoriPelayananList 
+        kategoriPelayananList: kategoriPelayananList
       });
       alert("Puji Tuhan! Konfigurasi berhasil disimpan ke Database.");
     } catch (error) {
@@ -48,6 +67,18 @@ export default function Konfigurasi({ profilGereja, setProfilGereja, profilMJH, 
 
   const filteredKategori = kategoriPelayananList.filter(k => k.mataJemaat === activeMjFilter);
 
+  // MENGUMPULKAN DATA WAKIL UNTUK DROPDOWN
+  const listSekretaris = [];
+  const listBendahara = [];
+  if (profilMJH?.pengurusMJ) {
+    Object.values(profilMJH.pengurusMJ).forEach(mj => {
+      if (mj.wakilSekretaris) listSekretaris.push(mj.wakilSekretaris);
+      if (mj.wakilSekretaris1) listSekretaris.push(mj.wakilSekretaris1);
+      if (mj.wakilBendahara) listBendahara.push(mj.wakilBendahara);
+      if (mj.wakilBendahara1) listBendahara.push(mj.wakilBendahara1);
+    });
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50 h-full">
       <div className="max-w-4xl mx-auto space-y-6">
@@ -59,10 +90,10 @@ export default function Konfigurasi({ profilGereja, setProfilGereja, profilMJH, 
         <div className="flex border-b border-gray-200 bg-white rounded-t-lg shadow-sm overflow-x-auto">
           <button onClick={() => setActiveTab('profil')} className={`whitespace-nowrap py-4 px-6 font-medium text-sm transition-colors border-b-2 ${activeTab === 'profil' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Profil Gereja</button>
           
-          {/* TAB BARU: Pengurus MJH */}
-          <button onClick={() => setActiveTab('pengurus')} className={`whitespace-nowrap py-4 px-6 font-medium text-sm transition-colors border-b-2 ${activeTab === 'pengurus' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Pengurus MJH</button>
+          {/* UBAH NAMA TAB MENJADI MJH */}
+          <button onClick={() => setActiveTab('pengurus')} className={`whitespace-nowrap py-4 px-6 font-medium text-sm transition-colors border-b-2 ${activeTab === 'pengurus' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>MJH</button>
           
-          <button onClick={() => setActiveTab('rayon')} className={`whitespace-nowrap py-4 px-6 font-medium text-sm transition-colors border-b-2 ${activeTab === 'rayon' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Rayon & Kategori Pelayanan</button>
+          <button onClick={() => setActiveTab('rayon')} className={`whitespace-nowrap py-4 px-6 font-medium text-sm transition-colors border-b-2 ${activeTab === 'rayon' ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Rayon & Kategori</button>
         </div>
 
         <div className="bg-white p-6 rounded-b-lg shadow-sm border border-t-0 border-gray-100">
@@ -94,21 +125,72 @@ export default function Konfigurasi({ profilGereja, setProfilGereja, profilMJH, 
             </div>
           )}
 
-          {/* TAB BARU: Form Isian Pengurus MJH */}
           {activeTab === 'pengurus' && (
             <div className="space-y-8 animate-fadeIn">
+              
               <section>
-                <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Penandatangan Laporan Evaluasi</h3>
-                <p className="text-sm text-gray-500 mb-6">Nama-nama di bawah ini akan otomatis tercetak di bagian bawah (tanda tangan) pada dokumen PDF Laporan Evaluasi.</p>
-                <div className="space-y-5 max-w-lg">
+                {/* UBAH TEKS MENJADI MAJELIS HARIAN JEMAAT */}
+                <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Majelis Harian Jemaat</h3>
+                <p className="text-sm text-gray-500 mb-4">Pastikan Anda telah mengisi nama-nama Pengurus Tingkat Mata Jemaat di bawah terlebih dahulu agar pilihan dropdown Sekretaris & Bendahara otomatis muncul.</p>
+                <div className="space-y-4 max-w-lg">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Ketua Majelis Jemaat</label>
                     <input type="text" placeholder="Contoh: Pdt. Nama Lengkap, S.Th" value={profilMJH?.ketua || ''} onChange={(e) => setProfilMJH({...profilMJH, ketua: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Sekretaris Wilayah</label>
-                    <input type="text" placeholder="Contoh: Pnt. Nama Sekretaris" value={profilMJH?.sekretaris || ''} onChange={(e) => setProfilMJH({...profilMJH, sekretaris: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Sekretaris Jemaat</label>
+                    {/* DROPDOWN UNTUK SEKRETARIS */}
+                    <select value={profilMJH?.sekretaris || ''} onChange={(e) => setProfilMJH({...profilMJH, sekretaris: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white">
+                      <option value="">-- Pilih dari Wakil Sekretaris Mata Jemaat --</option>
+                      {listSekretaris.map((nama, idx) => (
+                        <option key={idx} value={nama}>{nama}</option>
+                      ))}
+                    </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Bendahara Jemaat</label>
+                    {/* DROPDOWN UNTUK BENDAHARA */}
+                    <select value={profilMJH?.bendahara || ''} onChange={(e) => setProfilMJH({...profilMJH, bendahara: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white">
+                      <option value="">-- Pilih dari Wakil Bendahara Mata Jemaat --</option>
+                      {listBendahara.map((nama, idx) => (
+                        <option key={idx} value={nama}>{nama}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Pengurus Tingkat Mata Jemaat</h3>
+                <p className="text-sm text-gray-500 mb-6">Nama-nama yang Anda isi di bawah ini akan otomatis menjadi Data Absensi Kehadiran Rapat.</p>
+                <div className="space-y-6">
+                  {mataJemaatList.map(mj => (
+                    <div key={mj.id} className="bg-white border border-gray-200 shadow-sm p-5 rounded-lg">
+                      <h4 className="font-bold text-blue-700 mb-4 text-base bg-blue-50 py-2 px-3 rounded inline-block border border-blue-100">Mata Jemaat: {mj.nama}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">Wakil Ketua</label>
+                          <input type="text" value={profilMJH?.pengurusMJ?.[mj.nama]?.wakilKetua || ''} onChange={(e) => updatePengurusMJ(mj.nama, 'wakilKetua', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:bg-white" placeholder="Nama Wakil Ketua" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">Wakil Sekretaris</label>
+                          <input type="text" value={profilMJH?.pengurusMJ?.[mj.nama]?.wakilSekretaris || ''} onChange={(e) => updatePengurusMJ(mj.nama, 'wakilSekretaris', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:bg-white" placeholder="Nama Wakil Sekretaris" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">Wakil Sekretaris 1</label>
+                          <input type="text" value={profilMJH?.pengurusMJ?.[mj.nama]?.wakilSekretaris1 || ''} onChange={(e) => updatePengurusMJ(mj.nama, 'wakilSekretaris1', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:bg-white" placeholder="Nama Wakil Sekretaris 1" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">Wakil Bendahara</label>
+                          <input type="text" value={profilMJH?.pengurusMJ?.[mj.nama]?.wakilBendahara || ''} onChange={(e) => updatePengurusMJ(mj.nama, 'wakilBendahara', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:bg-white" placeholder="Nama Wakil Bendahara" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">Wakil Bendahara 1</label>
+                          <input type="text" value={profilMJH?.pengurusMJ?.[mj.nama]?.wakilBendahara1 || ''} onChange={(e) => updatePengurusMJ(mj.nama, 'wakilBendahara1', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 focus:bg-white" placeholder="Nama Wakil Bendahara 1" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
             </div>
