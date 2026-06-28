@@ -258,7 +258,7 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans text-gray-800 relative">
+    <div className="flex h-[100dvh] bg-gray-50 font-sans text-gray-800 relative">
       {/* PERBAIKAN DI BARIS INI: Menambahkan currentView={currentView} */}
       <Sidebar setCurrentView={setCurrentView} currentView={currentView} userRole={userRole} />
       

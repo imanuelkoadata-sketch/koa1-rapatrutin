@@ -1,9 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth"; // <-- Pastikan baris ini ada
-// Gunakan fungsi baru dari firestore
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+// Cukup gunakan getFirestore standar
+import { getFirestore } from "firebase/firestore"; 
 
-// TODO: Ganti nilai di bawah ini dengan konfigurasi Firebase Anda
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -14,10 +13,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})
-});
 
-export const auth = getAuth(app); // <-- Baris penentu yang menghilangkan layar putih
+// Gunakan inisialisasi standar. Ini akan memaksa aplikasi 
+// berkomunikasi langsung dengan cloud server setiap kali ada operasi simpan.
+const db = getFirestore(app);
 
+export const auth = getAuth(app);
 export { db };
