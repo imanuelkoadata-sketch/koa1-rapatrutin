@@ -4,7 +4,7 @@ import { db } from '../firebase'; // Sesuaikan path jika berbeda
 
 const PusatTautan = ({ userRole, mataJemaatList }) => {
   const [links, setLinks] = useState({
-    global: { klasis: '', keuangan: '' },
+    global: { klasis: '', keuangan: '', keuanganKoa1 },
     mj: {}
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -93,33 +93,43 @@ const PusatTautan = ({ userRole, mataJemaatList }) => {
         </div>
 
         {/* --- BAGIAN ATAS: TAUTAN GLOBAL --- */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8 border-t-4 border-blue-500">
-          <h3 className="text-lg font-bold text-gray-700 mb-4">Akses Umum</h3>
-        
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {isEditing ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Website Klasis</label>
-                  <input type="url" value={links.global?.klasis || ''} onChange={(e) => handleGlobalChange('klasis', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" placeholder="https://..." />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Download Aplikasi Keuangan</label>
-                  <input type="url" value={links.global?.keuangan || ''} onChange={(e) => handleGlobalChange('keuangan', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" placeholder="https://..." />
-                </div>
-              </>
-            ) : (
-              <>
-                <a href={links.global?.klasis || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition">
-                  🌐 Website Klasis
-                </a>
-                <a href={links.global?.keuangan || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-semibold transition">
-                  📱 Download Aplikasi Keuangan
-                </a>
-              </>
-            )}
-          </div>
+<div className="bg-white p-6 rounded-lg shadow-md mb-8 border-t-4 border-blue-500">
+  <h3 className="text-lg font-bold text-gray-700 mb-4">Akses Umum</h3>
+
+  {/* Mengubah md:grid-cols-2 menjadi md:grid-cols-3 agar pas untuk 3 item */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {isEditing ? (
+      <>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Website Klasis</label>
+          <input type="url" value={links.global?.klasis || ''} onChange={(e) => handleGlobalChange('klasis', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" placeholder="https://..." />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Download Aplikasi Keuangan</label>
+          <input type="url" value={links.global?.keuangan || ''} onChange={(e) => handleGlobalChange('keuangan', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" placeholder="https://..." />
+        </div>
+        {/* Kotak Input Baru: Keuangan Jemaat Koa 1 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Keuangan Jemaat Koa 1</label>
+          <input type="url" value={links.global?.keuanganKoa1 || ''} onChange={(e) => handleGlobalChange('keuanganKoa1', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2 border" placeholder="https://..." />
+        </div>
+      </>
+    ) : (
+      <>
+        <a href={links.global?.klasis || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-4 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-semibold transition">
+          🌐 Website Klasis
+        </a>
+        <a href={links.global?.keuangan || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-4 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg font-semibold transition">
+          📱 Download Aplikasi Keuangan
+        </a>
+        {/* Tombol Baru: Keuangan Jemaat Koa 1 */}
+        <a href={links.global?.keuanganKoa1 || '#'} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center p-4 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg font-semibold transition">
+          📊 Keuangan Jemaat Koa 1
+        </a>
+      </>
+    )}
+  </div>
+</div>
 
         {/* --- BAGIAN BAWAH: TAUTAN MATA JEMAAT --- */}
         <h3 className="text-lg font-bold text-gray-700 mb-4">Tautan Mata Jemaat</h3>
