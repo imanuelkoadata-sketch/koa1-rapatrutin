@@ -4,7 +4,7 @@ import { db } from '../firebase'; // Sesuaikan path jika berbeda
 
 const PusatTautan = ({ userRole, mataJemaatList }) => {
   const [links, setLinks] = useState({
-    global: { klasis: '', keuangan: '', keuanganKoa1 },
+    global: { klasis: '', keuangan: '', keuanganKoa1 : '' },
     mj: {}
   });
   const [isEditing, setIsEditing] = useState(false);
