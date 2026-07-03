@@ -12,13 +12,13 @@ export default function Topbar({ isMobileMenuOpen, setIsMobileMenuOpen, setCurre
   };
 
   return (
-    // PERBAIKAN 1: z-index saya naikkan ke z-50 agar menu tidak tertutup elemen lain di halaman utama
     <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm relative z-50 print:hidden">
       <div className="flex items-center gap-3">
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 bg-gray-100 rounded hover:bg-gray-200">
           <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
-        <h1 className="text-xl font-bold text-blue-800 md:hidden">Sistem Pelayanan</h1>
+        {/* TEKS DIUBAH MENJADI NOTULENSI RAPAT */}
+        <h1 className="text-xl font-bold text-blue-800 md:hidden">Notulensi Rapat</h1>
       </div>
 
       <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
@@ -30,7 +30,6 @@ export default function Topbar({ isMobileMenuOpen, setIsMobileMenuOpen, setCurre
       </div>
 
       {isMobileMenuOpen && (
-        /* PERBAIKAN 2: Ditambahkan max-h-[calc(100vh-80px)] dan overflow-y-auto di baris ini */
         <div className="absolute top-full left-0 w-full bg-white shadow-xl border-b border-gray-200 md:hidden flex flex-col p-4 space-y-2 max-h-[calc(100vh-80px)] overflow-y-auto">
           
           <button onClick={() => {setCurrentView('dashboard'); setIsMobileMenuOpen(false)}} className="block w-full text-left p-2 rounded-md text-gray-700 font-medium">Dashboard</button>

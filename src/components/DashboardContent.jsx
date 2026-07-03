@@ -1,12 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
+// Sesuaikan path ini persis seperti yang Anda gunakan di KalenderPelayanan.jsx
+import { db } from '../firebase'; 
 
-export default function DashboardContent({ currentDate, setCurrentDate, catatanKalender, pembahasanList, warnaSariList }) {
+export default function DashboardContent({ currentDate, setCurrentDate, pembahasanList, warnaSariList }) {
   
+  // Tambahkan state lokal untuk menampung data kalender dari Firestore
+  const [catatanKalender, setCatatanKalender] = useState({});
+
   const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  // Efek untuk menarik data kalender khusus bulan yang sedang dilihat di Dashboard
+  useEffect(() => {
+    const fetchKalenderDashboard = async () => {
+      try {
+        const docRef = doc(db, 'kalender_pelayanan', `${year}-${month + 1}`);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setCatatanKalender(docSnap.data().catatan || {});
+        } else {
+          setCatatanKalender({});
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data kalender untuk dashboard:", error);
+      }
+    };
+
+    fetchKalenderDashboard();
+  }, [year, month]); // Akan berjalan ulang jika tahun/bulan diubah
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -22,8 +48,8 @@ export default function DashboardContent({ currentDate, setCurrentDate, catatanK
     return catatanKalender[dateKey] || '';
   };
 
-  const keputusanProgram = pembahasanList.filter(item => item.keputusan.trim() !== '');
-  const keputusanWarnaSari = warnaSariList.filter(item => item.keputusan.trim() !== '');
+  const keputusanProgram = pembahasanList?.filter(item => item.keputusan.trim() !== '') || [];
+  const keputusanWarnaSari = warnaSariList?.filter(item => item.keputusan.trim() !== '') || [];
 
   // Cek apakah ada jadwal sama sekali bulan ini
   const hariDenganJadwal = daysArray.filter(tgl => tgl !== null && getCatatan(tgl).trim() !== '');

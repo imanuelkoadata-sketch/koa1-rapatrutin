@@ -108,7 +108,7 @@ function App() {
 
   useEffect(() => {
     const fetchKonfigurasi = async () => {
-      if (!currentUser) return; 
+      // if (!currentUser) return; 
 
       setIsConfigLoading(true);
       try {
@@ -131,7 +131,7 @@ function App() {
 
   useEffect(() => {
     const fetchLaporanBulanan = async () => {
-      if (!currentUser) return; 
+      //if (!currentUser) return; 
 
       setIsDataLoading(true);
       try {

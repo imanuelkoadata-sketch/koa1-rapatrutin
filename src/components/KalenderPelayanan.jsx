@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+// Sesuaikan path import db dengan lokasi firebaseConfig.js di proyek Anda
+import { db } from '../firebase'; 
 
-export default function KalenderPelayanan({ currentDate, setCurrentDate, catatanKalender, setCatatanKalender, userRole }) {
-  const isLocked = userRole !== 'admin';
+export default function KalenderPelayanan({ currentDate, setCurrentDate, userRole }) {
+  // Pindahkan state catatan ke dalam komponen jika hanya digunakan di sini,
+  // atau biarkan di props jika dipakai di komponen lain (saya asumsikan di dalam agar lebih mudah dikelola).
+  const [catatanKalender, setCatatanKalender] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Mode terkunci jika bukan admin, atau jika admin tapi belum menekan tombol Edit
+  const isLocked = userRole !== 'admin' || !isEditing;
+
   const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const namaHari = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const year = currentDate.getFullYear(); const month = currentDate.getMonth();
+  const year = currentDate.getFullYear(); 
+  const month = currentDate.getMonth();
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -12,7 +24,28 @@ export default function KalenderPelayanan({ currentDate, setCurrentDate, catatan
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysArray = Array(firstDay).fill(null);
+  
   for (let i = 1; i <= daysInMonth; i++) daysArray.push(i);
+
+  // Tarik data dari Firestore setiap kali bulan/tahun berganti
+  useEffect(() => {
+    const fetchDataBulanIni = async () => {
+      try {
+        const docRef = doc(db, 'kalender_pelayanan', `${year}-${month + 1}`);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          setCatatanKalender(docSnap.data().catatan || {});
+        } else {
+          setCatatanKalender({});
+        }
+      } catch (error) {
+        console.error("Gagal mengambil data kalender:", error);
+      }
+    };
+
+    fetchDataBulanIni();
+  }, [year, month]);
 
   const handleCatatanChange = (tanggal, teks) => {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(tanggal).padStart(2, '0')}`;
@@ -24,6 +57,25 @@ export default function KalenderPelayanan({ currentDate, setCurrentDate, catatan
     return catatanKalender[dateKey] || '';
   };
 
+  // Fungsi untuk menyimpan ke Firestore
+  const handleSimpan = async () => {
+    if (userRole !== 'admin') return;
+    setIsSaving(true);
+    
+    try {
+      const docRef = doc(db, 'kalender_pelayanan', `${year}-${month + 1}`);
+      // Menggunakan merge: true agar tidak menimpa data struktur lain jika ada
+      await setDoc(docRef, { catatan: catatanKalender }, { merge: true });
+      setIsEditing(false);
+      alert("Jadwal pelayanan berhasil disimpan!");
+    } catch (error) {
+      console.error("Gagal menyimpan jadwal:", error);
+      alert("Terjadi kesalahan saat menyimpan data.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50 h-full flex flex-col">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col space-y-4">
@@ -31,23 +83,56 @@ export default function KalenderPelayanan({ currentDate, setCurrentDate, catatan
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
              <h2 className="text-2xl font-bold text-blue-800">Kalender Pelayanan</h2>
-             {isLocked ? (
+             {userRole !== 'admin' ? (
                <p className="text-red-500 text-sm font-bold flex items-center gap-1 mt-1">
                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
                  Mode Baca Saja (Terkunci)
                </p>
-             ) : <p className="text-gray-500 text-sm">Ketik langsung pada tanggal untuk menambahkan jadwal.</p>}
+             ) : (
+               <p className="text-gray-500 text-sm">
+                 {isEditing ? "Mode Edit Aktif. Ketik pada tanggal dan jangan lupa klik Simpan." : "Klik Edit untuk mulai mengubah jadwal."}
+               </p>
+             )}
           </div>
           <div className="flex gap-2 self-start md:self-auto">
             <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 font-bold shadow-sm flex items-center gap-2">Unduh JPG</button>
-            {!isLocked && <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-bold shadow-sm">Simpan</button>}
+            
+            {/* Logika Tombol Edit & Simpan Khusus Admin */}
+            {userRole === 'admin' && !isEditing && (
+              <button 
+                onClick={() => setIsEditing(true)} 
+                className="bg-yellow-500 text-white px-6 py-2 rounded-md hover:bg-yellow-600 font-bold shadow-sm">
+                Edit Jadwal
+              </button>
+            )}
+
+            {userRole === 'admin' && isEditing && (
+              <>
+                <button 
+                  onClick={() => setIsEditing(false)} 
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 font-bold shadow-sm">
+                  Batal
+                </button>
+                <button 
+                  onClick={handleSimpan} 
+                  disabled={isSaving}
+                  className={`${isSaving ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} text-white px-6 py-2 rounded-md font-bold shadow-sm flex items-center`}>
+                  {isSaving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
+        {/* --- KODE RENDER KALENDER BULAN, DESKTOP GRID, & MOBILE GRID TETAP SAMA SEPERTI ASLINYA --- */}
         <div className="bg-white p-4 border rounded-lg shadow-sm flex items-center justify-between">
-          <button onClick={prevMonth} className="px-3 py-2 bg-gray-100 hover:bg-blue-50 rounded text-sm font-bold text-gray-700">&larr; <span className="hidden md:inline">Bulan Lalu</span></button>
+          <button onClick={prevMonth} className="px-3 py-2 bg-gray-100 hover:bg-blue-50 rounded text-sm font-bold text-gray-700">&larr;
+            <span className="hidden md:inline"> Bulan Lalu</span>
+          </button>
           <h2 className="text-lg md:text-xl font-bold text-blue-800 uppercase text-center">{namaBulan[month]} {year}</h2>
-          <button onClick={nextMonth} className="px-3 py-2 bg-gray-100 hover:bg-blue-50 rounded text-sm font-bold text-gray-700"><span className="hidden md:inline">Bulan Depan</span> &rarr;</button>
+          <button onClick={nextMonth} className="px-3 py-2 bg-gray-100 hover:bg-blue-50 rounded text-sm font-bold text-gray-700">
+            <span className="hidden md:inline">Bulan Depan </span> &rarr;
+          </button>
         </div>
 
         <div className="hidden md:flex bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex-col overflow-hidden">
@@ -60,7 +145,14 @@ export default function KalenderPelayanan({ currentDate, setCurrentDate, catatan
                 {tanggal !== null && (
                   <>
                     <span className="text-sm font-bold text-gray-800 mb-1 border-b pb-1">{tanggal}</span>
-                    <textarea disabled={isLocked} value={getCatatan(tanggal)} onChange={(e) => handleCatatanChange(tanggal, e.target.value)} placeholder="+" style={{ fontFamily: '"Arial Narrow", Arial, sans-serif' }} className="flex-1 w-full text-[12px] leading-tight text-gray-800 bg-transparent resize-none outline-none placeholder-gray-300 focus:placeholder-transparent overflow-y-auto custom-scrollbar disabled:opacity-80" />
+                    <textarea 
+                      disabled={isLocked} 
+                      value={getCatatan(tanggal)} 
+                      onChange={(e) => handleCatatanChange(tanggal, e.target.value)} 
+                      placeholder="+" 
+                      style={{ fontFamily: '"Arial Narrow", Arial, sans-serif' }} 
+                      className="flex-1 w-full text-[12px] leading-tight text-gray-800 bg-transparent resize-none outline-none placeholder-gray-300 focus:placeholder-transparent overflow-y-auto custom-scrollbar disabled:opacity-80 disabled:bg-gray-50" 
+                    />
                   </>
                 )}
               </div>
@@ -68,6 +160,7 @@ export default function KalenderPelayanan({ currentDate, setCurrentDate, catatan
           </div>
         </div>
 
+        {/* Mobile View */}
         <div className="md:hidden flex flex-col gap-3 pb-8">
           {daysArray.filter(t => t !== null).map((tanggal) => {
             const isSunday = namaHari[new Date(year, month, tanggal).getDay()] === "Minggu";
@@ -77,11 +170,19 @@ export default function KalenderPelayanan({ currentDate, setCurrentDate, catatan
                    <span className="font-bold text-lg">{tanggal}</span>
                    <span className="text-sm font-bold uppercase">{namaHari[new Date(year, month, tanggal).getDay()]}</span>
                  </div>
-                 <textarea disabled={isLocked} value={getCatatan(tanggal)} onChange={(e) => handleCatatanChange(tanggal, e.target.value)} placeholder="Ketik jadwal di sini..." style={{ fontFamily: '"Arial Narrow", Arial, sans-serif' }} className="w-full text-sm leading-tight text-gray-700 bg-gray-50 p-2 rounded resize-y min-h-[80px] outline-none border border-transparent disabled:opacity-80" />
+                 <textarea 
+                   disabled={isLocked} 
+                   value={getCatatan(tanggal)} 
+                   onChange={(e) => handleCatatanChange(tanggal, e.target.value)} 
+                   placeholder="Ketik jadwal di sini..." 
+                   style={{ fontFamily: '"Arial Narrow", Arial, sans-serif' }} 
+                   className="w-full text-sm leading-tight text-gray-700 bg-gray-50 p-2 rounded resize-y min-h-[80px] outline-none border border-transparent disabled:opacity-80 disabled:bg-gray-100" 
+                 />
               </div>
             );
           })}
         </div>
+
       </div>
     </div>
   );

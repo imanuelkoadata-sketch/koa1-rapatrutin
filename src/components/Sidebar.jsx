@@ -2,7 +2,6 @@ import React from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 
-// PERBAIKAN 1: Menambahkan currentView ke dalam props/parameter
 export default function Sidebar({ setCurrentView, currentView, userRole }) {
   const handleLogout = async () => {
     if(window.confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
@@ -22,8 +21,6 @@ export default function Sidebar({ setCurrentView, currentView, userRole }) {
     return 'Pengguna';
   };
 
-  // PERBAIKAN 2: Fungsi untuk menyamakan gaya semua tombol. 
-  // Jika sedang aktif, latar belakangnya biru. Jika tidak, akan abu-abu dan ada efek hover biru.
   const getNavClass = (viewName) => {
     return `w-full text-left p-3 rounded-md font-medium transition-colors ${
       currentView === viewName
@@ -37,10 +34,14 @@ export default function Sidebar({ setCurrentView, currentView, userRole }) {
       
       {/* --- HEADER --- */}
       <div className="p-6 border-b border-gray-200 flex flex-col items-center">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3 shadow-inner">
-          <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-        </div>
-        <h1 className="text-xl font-bold text-blue-800 text-center leading-tight">Sistem<br/>Pelayanan</h1>
+        {/* LOGO GAMBAR BARU */}
+        <img 
+          src="/logo.png" 
+          alt="Logo Notulensi" 
+          className="w-20 h-20 object-contain mb-2" 
+        />
+        {/* TEKS DIUBAH MENJADI NOTULENSI RAPAT */}
+        <h1 className="text-xl font-bold text-blue-800 text-center leading-tight">Notulensi<br/>Rapat</h1>
         
         <div className={`mt-3 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider text-center ${userRole === 'guest' ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
           Akses: {roleDisplay()}
@@ -51,7 +52,6 @@ export default function Sidebar({ setCurrentView, currentView, userRole }) {
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         <button onClick={() => setCurrentView('dashboard')} className={getNavClass('dashboard')}>Dashboard</button>
         
-        {/* Menu untuk semua yang sudah Login */}
         {userRole !== 'guest' && (
           <>
             <button onClick={() => setCurrentView('datarapat')} className={getNavClass('datarapat')}>Data Rapat</button>
@@ -64,7 +64,6 @@ export default function Sidebar({ setCurrentView, currentView, userRole }) {
         <button onClick={() => setCurrentView('cetak')} className={getNavClass('cetak')}>Cetak Evaluasi</button>
         <button onClick={() => setCurrentView('pusattautan')} className={getNavClass('pusattautan')}>Link</button>
 
-        {/* Menu Khusus Admin (Hanya MJH) */}
         {userRole === 'admin' && (
           <div className="pt-4 mt-4 border-t border-gray-200 space-y-2">
             <p className="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider">Akses Khusus Admin</p>
