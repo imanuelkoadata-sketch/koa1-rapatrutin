@@ -48,8 +48,10 @@ export default function DashboardContent({ currentDate, setCurrentDate, pembahas
     return catatanKalender[dateKey] || '';
   };
 
-  const keputusanProgram = pembahasanList?.filter(item => item.keputusan.trim() !== '') || [];
-  const keputusanWarnaSari = warnaSariList?.filter(item => item.keputusan.trim() !== '') || [];
+  // --- PERBAIKAN POIN 4: FILTER DAN TAMPILAN DASHBOARD ---
+  // Kita pastikan item memiliki judul DAN keputusan yang tidak kosong
+  const keputusanProgram = pembahasanList?.filter(item => item.judul?.trim() !== '' && item.keputusan?.trim() !== '') || [];
+  const keputusanWarnaSari = warnaSariList?.filter(item => item.judulWarnaSari?.trim() !== '' && item.keputusan?.trim() !== '') || [];
 
   // Cek apakah ada jadwal sama sekali bulan ini
   const hariDenganJadwal = daysArray.filter(tgl => tgl !== null && getCatatan(tgl).trim() !== '');
@@ -68,22 +70,34 @@ export default function DashboardContent({ currentDate, setCurrentDate, pembahas
 
       <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
         
+        {/* --- PERBAIKAN POIN 4: TAMPILAN INFO TERKINI --- */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold border-b pb-2 mb-4">Info Terkini & Keputusan Rapat</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-               <h4 className="font-bold text-blue-800 text-sm mb-2">Program Pelayanan:</h4>
+               <h4 className="font-bold text-blue-800 text-sm mb-3">Program Pelayanan:</h4>
                {keputusanProgram.length > 0 ? (
-                 <ul className="space-y-1 text-sm text-gray-600 list-disc pl-5">
-                   {keputusanProgram.map(p => <li key={p.id}>{p.keputusan}</li>)}
+                 <ul className="space-y-3 text-sm text-gray-700">
+                   {keputusanProgram.map(p => (
+                     <li key={p.id} className="bg-blue-50 p-3 rounded border border-blue-100">
+                       <strong className="block text-blue-900 mb-1">{p.judul}</strong>
+                       <span className="text-gray-600 italic">Keputusan: {p.keputusan}</span>
+                     </li>
+                   ))}
                  </ul>
                ) : <p className="text-sm text-gray-400 italic">Belum ada keputusan program.</p>}
             </div>
             <div>
-               <h4 className="font-bold text-blue-800 text-sm mb-2">Tindak Lanjut Warna Sari:</h4>
+               <h4 className="font-bold text-blue-800 text-sm mb-3">Tindak Lanjut Warna Sari:</h4>
                {keputusanWarnaSari.length > 0 ? (
-                 <ul className="space-y-1 text-sm text-gray-600 list-disc pl-5">
-                   {keputusanWarnaSari.map(w => <li key={w.id}>{w.keputusan}</li>)}
+                 <ul className="space-y-3 text-sm text-gray-700">
+                   {keputusanWarnaSari.map(w => (
+                     <li key={w.id} className="bg-gray-50 p-3 rounded border border-gray-200">
+                        {/* Menyesuaikan dengan nama properti yang mungkin akan Anda gunakan di Warna Sari */}
+                       <strong className="block text-gray-800 mb-1">{w.judulWarnaSari || w.judul}</strong>
+                       <span className="text-gray-600 italic">Keputusan: {w.keputusan}</span>
+                     </li>
+                   ))}
                  </ul>
                ) : <p className="text-sm text-gray-400 italic">Belum ada tindak lanjut warna sari.</p>}
             </div>
@@ -104,9 +118,9 @@ export default function DashboardContent({ currentDate, setCurrentDate, pembahas
             <div className="grid grid-cols-7 border-b border-gray-200 bg-blue-50">
               {namaHari.map(hari => <div key={hari} className="py-2 text-center text-sm font-bold text-blue-800 border-r last:border-r-0">{hari}</div>)}
             </div>
-            <div className="grid grid-cols-7 bg-gray-200 gap-1px">
+            <div className="grid grid-cols-7 bg-gray-200 gap-[1px]">
               {daysArray.map((tanggal, index) => (
-                <div key={index} className={`bg-white p-2 flex flex-col min-h-30 h-auto ${tanggal === null ? 'bg-gray-50' : ''}`}>
+                <div key={index} className={`bg-white p-2 flex flex-col min-h-[120px] h-auto ${tanggal === null ? 'bg-gray-50' : ''}`}>
                   {tanggal !== null && (
                     <>
                       <span className="text-sm font-bold text-gray-800 mb-1 border-b pb-1">{tanggal}</span>
@@ -121,13 +135,13 @@ export default function DashboardContent({ currentDate, setCurrentDate, pembahas
           </div>
 
           {/* TAMPILAN MOBILE (LIST VIEW HANYA TANGGAL TERISI) */}
-          <div className="md:hidden flex flex-col bg-gray-50 p-4 gap-3 max-h-500px overflow-y-auto">
+          <div className="md:hidden flex flex-col bg-gray-50 p-4 gap-3 max-h-[500px] overflow-y-auto">
             {hariDenganJadwal.length > 0 ? (
               hariDenganJadwal.map((tanggal, index) => {
                 const dayName = namaHari[new Date(year, month, tanggal).getDay()];
                 return (
                   <div key={`mob-${index}`} className="bg-white p-4 rounded-md shadow-sm border border-gray-200 flex gap-4 items-start">
-                    <div className="bg-blue-100 text-blue-800 rounded-lg px-2 py-2 flex flex-col items-center justify-center min-w-3.5rem border border-blue-200">
+                    <div className="bg-blue-100 text-blue-800 rounded-lg px-2 py-2 flex flex-col items-center justify-center min-w-[3.5rem] border border-blue-200">
                       <span className="text-xs font-bold uppercase">{dayName.substring(0,3)}</span>
                       <span className="text-2xl font-bold">{tanggal}</span>
                     </div>

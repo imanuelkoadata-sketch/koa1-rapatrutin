@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function WakilSekretaris1({ 
   bulanLaporan, pemimpinKebaktian, setPemimpinKebaktian,
@@ -26,7 +26,9 @@ export default function WakilSekretaris1({
       { baseId: 'nikah', label: 'Buku Nikah' }, { baseId: 'kelahiran', label: 'Buku Kelahiran' },
       { baseId: 'kematian', label: 'Buku Kematian' }, { baseId: 'mimbar', label: 'Buku Pelayanan Mimbar' },
       { baseId: 'doa', label: 'Buku Pokok Doa' }, { baseId: 'induk', label: 'Buku Induk Jemaat' },
-      { baseId: 'atestasi', label: 'Buku Atestasi Masuk Keluar' }, { baseId: 'anggota_majelis', label: 'Buku Anggota Majelis' }
+      { baseId: 'atestasi', label: 'Buku Atestasi Masuk Keluar' }, { baseId: 'anggota_majelis', label: 'Buku Anggota Majelis' },
+      { baseId: 'tamu', label: 'Buku Tamu', khusus: 'Imanuel Koa' },
+      { baseId: 'ekspedisi', label: 'Buku Ekspedisi Masuk Keluar', khusus: 'Imanuel Koa' }
     ];
 
     let isUpdated = false;
@@ -34,8 +36,9 @@ export default function WakilSekretaris1({
 
     mataJemaatList.forEach(mj => {
       defaultBooks.forEach(db => {
+        if (db.khusus && db.khusus !== mj) return; 
+
         const expectedId = `${db.baseId}_${mj.replace(/\s+/g, '')}`;
-        // Amankan legacy data lama yang ID-nya masih ID dasar
         const legacyId = db.baseId; 
 
         let existing = listBuku.find(b => b.id === expectedId || (b.id === legacyId && mj === mataJemaatList[0]));

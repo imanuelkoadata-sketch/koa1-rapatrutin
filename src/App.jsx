@@ -51,8 +51,10 @@ function App() {
   const [temaPA, setTemaPA] = useState('');
   
   const [kehadiranMajelis, setKehadiranMajelis] = useState([]);
-  const [pembahasanList, setPembahasanList] = useState([{ id: 1, pembahasan: '', keputusan: '' }]);
-  const [warnaSariList, setWarnaSariList] = useState([{ id: 2, pembahasan: '', keputusan: '' }]);
+  
+  // PERBAIKAN POIN 5 & 6: Menyesuaikan struktur state dengan form rincian dinamis
+  const [pembahasanList, setPembahasanList] = useState([{ id: 1, judul: '', rincianPembahasan: [{ id: Date.now(), teks: '' }], keputusan: '' }]);
+  const [warnaSariList, setWarnaSariList] = useState([{ id: 2, judulWarnaSari: '', pembahasanWarnaSari: [{ id: Date.now()+1, teks: '' }], keputusan: '' }]);
 
   const [kehadiranWK, setKehadiranWK] = useState([]);
   const [kegiatanWilayah, setKegiatanWilayah] = useState([{ id: 1, tanggal: '', kegiatan: '' }]);
@@ -68,13 +70,18 @@ function App() {
   const [pelayananKhusus, setPelayananKhusus] = useState([{ id: 2, tanggal: '', jenis: '' }]);
   const [kendalainfosWasek, setKendalainfosWasek] = useState(['']);
   const [pemimpinKebaktian, setPemimpinKebaktian] = useState([]);
+  
+  // PERBAIKAN POIN 7: Menambahkan Buku Tamu & Buku Ekspedisi khusus Imanuel Koa
   const [bukuAdmin, setBukuAdmin] = useState([
     { id: 'baptis', label: 'Buku Baptis', checked: false }, { id: 'sidi', label: 'Buku Sidi', checked: false },
     { id: 'nikah', label: 'Buku Nikah', checked: false }, { id: 'kelahiran', label: 'Buku Kelahiran', checked: false },
     { id: 'kematian', label: 'Buku Kematian', checked: false }, { id: 'mimbar', label: 'Buku Pelayanan Mimbar', checked: false },
     { id: 'doa', label: 'Buku Pokok Doa', checked: false }, { id: 'induk', label: 'Buku Induk Jemaat', checked: false },
     { id: 'atestasi', label: 'Buku Atestasi Masuk Keluar', checked: false }, { id: 'anggota_majelis', label: 'Buku Anggota Majelis', checked: false },
+    { id: 'tamu', label: 'Buku Tamu', checked: false, khusus: 'Imanuel Koa' },
+    { id: 'ekspedisi', label: 'Buku Ekspedisi Masuk Keluar', checked: false, khusus: 'Imanuel Koa' }
   ]);
+  
   const [kendalainfosWasek1, setKendalainfosWasek1] = useState(['']);
 
   const [kasKeuangan, setKasKeuangan] = useState({ lalu: 0, terima: 0, keluar: 0, sisa: 0 });
@@ -108,8 +115,6 @@ function App() {
 
   useEffect(() => {
     const fetchKonfigurasi = async () => {
-      // if (!currentUser) return; 
-
       setIsConfigLoading(true);
       try {
         const docSnap = await getDoc(doc(db, "konfigurasi", "utama"));
@@ -131,8 +136,6 @@ function App() {
 
   useEffect(() => {
     const fetchLaporanBulanan = async () => {
-      //if (!currentUser) return; 
-
       setIsDataLoading(true);
       try {
         const docSnap = await getDoc(doc(db, "laporan_evaluasi", periodeBulan));
@@ -169,8 +172,11 @@ function App() {
           setTanggalRapat(periodeBulan + '-01');
           setPelayanPA(''); setBacaanPA(''); setTemaPA('');
           setKehadiranMajelis([]); 
-          setPembahasanList([{ id: 1, pembahasan: '', keputusan: '' }]);
-          setWarnaSariList([{ id: 2, pembahasan: '', keputusan: '' }]);
+          
+          // PERBAIKAN POIN 5 & 6: Struktur kosong saat tidak ada data (Reset)
+          setPembahasanList([{ id: 1, judul: '', rincianPembahasan: [{ id: Date.now(), teks: '' }], keputusan: '' }]);
+          setWarnaSariList([{ id: 2, judulWarnaSari: '', pembahasanWarnaSari: [{ id: Date.now()+1, teks: '' }], keputusan: '' }]);
+          
           setKehadiranWK([]);
           setKegiatanWilayah([{ id: 1, tanggal: '', kegiatan: '' }]);
           setKegiatanMataJemaat([{ id: 2, tanggal: '', kegiatan: '' }]);
@@ -201,9 +207,7 @@ function App() {
   useEffect(() => {
     if (!isDataLoading && profilMJH) {
       const names = new Set();
-      
       if (profilMJH.ketua) names.add(profilMJH.ketua);
-      
       if (profilMJH.pengurusMJ) {
         Object.values(profilMJH.pengurusMJ).forEach(mj => {
           if (mj.wakilKetua) names.add(mj.wakilKetua);
@@ -215,7 +219,6 @@ function App() {
       }
       
       const uniqueNames = Array.from(names).filter(Boolean); 
-      
       if (uniqueNames.length > 0) {
         setKehadiranMajelis(prevKehadiran => {
           const currentNames = prevKehadiran.map(m => m.nama);
@@ -259,7 +262,6 @@ function App() {
 
   return (
     <div className="flex h-[100dvh] bg-gray-50 font-sans text-gray-800 relative">
-      {/* PERBAIKAN DI BARIS INI: Menambahkan currentView={currentView} */}
       <Sidebar setCurrentView={setCurrentView} currentView={currentView} userRole={userRole} />
       
       <main className="flex-1 flex flex-col overflow-hidden">

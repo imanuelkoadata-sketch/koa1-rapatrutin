@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 export default function CetakEvaluasi({ 
-  mataJemaatList = [], profilMJH, // <-- TAMBAHAN: Menerima prop profilMJH
+  periodeBulan, // Pastikan ini ada
+  mataJemaatList = [], profilMJH, 
   tempatRapat, tanggalRapat, profilGereja, pelayanPA, bacaanPA, temaPA, kehadiranMajelis, pembahasanList, warnaSariList,
   kehadiranWK, kegiatanWilayah, kegiatanMataJemaat, pelaksanaanRapatMJ, agendasMJ, keputusansMJ, kendalainfosWK,
   kehadiranJemaat, realisasiPelayanan, persembahanWasek, pelayananKhusus, kendalainfosWasek, pemimpinKebaktian, bukuAdmin, kendalainfosWasek1,
@@ -24,6 +25,10 @@ export default function CetakEvaluasi({
       Mata Jemaat: {nama}
     </h6>
   );
+
+  // Helper untuk mengecek ketersediaan data Kendala
+  const hasKendalaWK = safeKendalaWK.some(k => k.text?.trim() !== '');
+  const hasKendalaWabend = [...(kendalainfosWabend || []), ...(kendalainfosWabend1 || [])].some(k => k.text?.trim() !== '');
 
   return (
     <div className="flex-1 overflow-y-auto bg-gray-200 p-4 md:p-8 h-full print:p-0 print:bg-white print:overflow-visible">
@@ -57,7 +62,7 @@ export default function CetakEvaluasi({
            <p className="text-gray-600 text-sm">Pratinjau dokumen sebelum dicetak ke PDF atau Kertas A4.</p>
         </div>
         <div className="flex gap-4 items-center">
-          <input type="month" value={bulanCetak} onChange={(e) => setBulanCetak(e.target.value)} className="px-3 py-2 border rounded-md shadow-sm" />
+          
           <button onClick={handlePrint} className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-bold shadow-md flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
             Cetak Dokumen
@@ -77,7 +82,7 @@ export default function CetakEvaluasi({
 
         <div className="text-center mb-8">
           <h3 className="font-bold underline text-lg">NOTULEN RAPAT & EVALUASI BULANAN</h3>
-          <p className="text-sm font-medium mt-1">Periode Bulan: {bulanCetak}</p>
+          <p className="text-sm font-medium mt-1">Periode Bulan: {periodeBulan}</p>
         </div>
 
         <div className="space-y-6 text-[12px] md:text-[13px] text-gray-800 print:text-black leading-snug font-serif">
@@ -119,14 +124,15 @@ export default function CetakEvaluasi({
                  <div key={mj.id} className="w-full">
                    <JudulMataJemaat nama={mj.nama} />
                    <table className="w-full border-collapse border border-gray-400 text-center text-[10px]">
-                     <thead className="bg-gray-100 print:bg-gray-100 print:color-adjust-exact"><tr><th className="border border-gray-400 p-0.5">Tgl</th><th className="border border-gray-400 p-0.5">Pnt</th><th className="border border-gray-400 p-0.5">Dkn</th><th className="border border-gray-400 p-0.5">Pgj</th><th className="border border-gray-400 p-0.5">Kst</th></tr></thead>
+                     {/* POIN 8: Penambahan Kolom Jumlah (Jml) */}
+                     <thead className="bg-gray-100 print:bg-gray-100 print:color-adjust-exact"><tr><th className="border border-gray-400 p-0.5">Tgl</th><th className="border border-gray-400 p-0.5">Pnt</th><th className="border border-gray-400 p-0.5">Dkn</th><th className="border border-gray-400 p-0.5">Pgj</th><th className="border border-gray-400 p-0.5">Kst</th><th className="border border-gray-400 p-0.5 font-extrabold text-blue-800">Jml</th></tr></thead>
                      <tbody>
                        {safeKehadiranWK.filter(item => item.mataJemaat === mj.nama).length > 0 ? (
                          safeKehadiranWK.filter(item => item.mataJemaat === mj.nama).map((item) => (
-                           <tr key={`${mj.id}-${item.id}`}><td className="border border-gray-400 p-0.5 truncate max-w-[80px] text-left">{item.nama}</td><td className="border border-gray-400 p-0.5">{item.penatua || '-'}</td><td className="border border-gray-400 p-0.5">{item.diaken || '-'}</td><td className="border border-gray-400 p-0.5">{item.pengajar || '-'}</td><td className="border border-gray-400 p-0.5">{item.koster || '-'}</td></tr>
+                           <tr key={`${mj.id}-${item.id}`}><td className="border border-gray-400 p-0.5 truncate max-w-[80px] text-left">{item.nama}</td><td className="border border-gray-400 p-0.5">{item.penatua || '-'}</td><td className="border border-gray-400 p-0.5">{item.diaken || '-'}</td><td className="border border-gray-400 p-0.5">{item.pengajar || '-'}</td><td className="border border-gray-400 p-0.5">{item.koster || '-'}</td><td className="border border-gray-400 p-0.5 font-bold text-blue-800">{item.jumlah || '-'}</td></tr>
                          ))
                        ) : (
-                         <tr><td colSpan="5" className="border border-gray-400 p-1 text-center text-gray-400 italic">[-]</td></tr>
+                         <tr><td colSpan="6" className="border border-gray-400 p-1 text-center text-gray-400 italic">[-]</td></tr>
                        )}
                      </tbody>
                    </table>
@@ -176,18 +182,24 @@ export default function CetakEvaluasi({
                    })}
                  </div>
 
-                 <div className="grid grid-cols-2 gap-2">
-                   {mataJemaatList.map((mj) => (
-                     <div key={mj.id} className="w-full border p-2">
-                       <h5 className="font-bold mb-1 border-b pb-1 text-[11px] text-center">D. Kendala/Info W. Ketua ({mj.nama})</h5>
-                       <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
-                         {safeKendalaWK.filter(k => k.mataJemaat === mj.nama && k.text).length > 0 ? 
-                           safeKendalaWK.filter(k => k.mataJemaat === mj.nama && k.text).map((k, i) => <li key={`k-${i}`}>{k.text}</li>) 
-                           : <li className="text-gray-400 list-none">[-]</li>}
-                       </ul>
-                     </div>
-                   ))}
-                 </div>
+                 {/* POIN 9: Sembunyikan bagian Kendala WK jika sepenuhnya kosong */}
+                 {hasKendalaWK && (
+                   <div className="grid grid-cols-2 gap-2 mt-4">
+                     {mataJemaatList.map((mj) => {
+                       const kendalaList = safeKendalaWK.filter(k => k.mataJemaat === mj.nama && k.text?.trim() !== '');
+                       if (kendalaList.length === 0) return null; // Sembunyikan box spesifik jika kosong
+                       
+                       return (
+                         <div key={mj.id} className="w-full border p-2">
+                           <h5 className="font-bold mb-1 border-b pb-1 text-[11px] text-center">D. Kendala/Info W. Ketua ({mj.nama})</h5>
+                           <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
+                             {kendalaList.map((k, i) => <li key={`k-${i}`}>{k.text}</li>)}
+                           </ul>
+                         </div>
+                       );
+                     })}
+                   </div>
+                 )}
              </div>
           </section>
           
@@ -242,23 +254,29 @@ export default function CetakEvaluasi({
              </div>
 
              <div className="grid grid-cols-2 gap-2 break-inside-avoid">
-               {mataJemaatList.map((mj) => (
-                 <div key={mj.id} className="w-full border p-2">
-                   <h5 className="font-bold mb-1 border-b pb-1 text-[11px] text-center">D. Buku Admin & Kendala ({mj.nama})</h5>
-                   <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
-                     {Array.isArray(bukuAdmin) && bukuAdmin.filter(b => b.checked && b.mataJemaat === mj.nama).map(b => <li key={`b-${b.id}`}>{b.label}</li>)}
-                   </ul>
-                   <p className="font-bold mt-1 text-[10px]">Kendala:</p>
-                   <ul className="list-disc pl-4 space-y-0.5 text-[10px]">
-                     {Array.isArray(kendalainfosWasek) && kendalainfosWasek.filter(k => k.mataJemaat === mj.nama && k.text).map((k, i) => <li key={`w-${i}`}>{k.text}</li>)}
-                     {Array.isArray(kendalainfosWasek1) && kendalainfosWasek1.filter(k => k.mataJemaat === mj.nama && k.text).map((k, i) => <li key={`w1-${i}`}>{k.text}</li>)}
+               {mataJemaatList.map((mj) => {
+                 // POIN 9: Mengekstrak array kendala Wasek untuk memvalidasi apakah kosong
+                 const wKendala = [...(kendalainfosWasek || []), ...(kendalainfosWasek1 || [])].filter(k => k.mataJemaat === mj.nama && k.text?.trim() !== '');
+                 
+                 return (
+                   <div key={mj.id} className="w-full border p-2">
+                     <h5 className="font-bold mb-1 border-b pb-1 text-[11px] text-center">D. Buku Admin & Kendala ({mj.nama})</h5>
+                     <ul className="list-disc pl-4 space-y-0.5 text-[11px]">
+                       {Array.isArray(bukuAdmin) && bukuAdmin.filter(b => b.checked && b.mataJemaat === mj.nama).map(b => <li key={`b-${b.id}`}>{b.label}</li>)}
+                     </ul>
                      
-                     {(!Array.isArray(kendalainfosWasek) || !kendalainfosWasek.some(k => k.mataJemaat === mj.nama && k.text)) && (!Array.isArray(kendalainfosWasek1) || !kendalainfosWasek1.some(k => k.mataJemaat === mj.nama && k.text)) && (
-                       <li className="text-gray-400 list-none">[-]</li>
+                     {/* Hanya render area kendala jika ada isinya */}
+                     {wKendala.length > 0 && (
+                       <div className="mt-2 pt-2 border-t border-dashed border-gray-300">
+                         <p className="font-bold text-[10px]">Kendala:</p>
+                         <ul className="list-disc pl-4 space-y-0.5 text-[10px]">
+                           {wKendala.map((k, i) => <li key={`w-${i}`}>{k.text}</li>)}
+                         </ul>
+                       </div>
                      )}
-                   </ul>
-                 </div>
-               ))}
+                   </div>
+                 );
+               })}
              </div>
           </section>
           
@@ -307,38 +325,80 @@ export default function CetakEvaluasi({
                ))}
              </div>
 
-             {/* C. KENDALA BENDAHARA */}
-             <div className="grid grid-cols-2 gap-2 break-inside-avoid">
-               {mataJemaatList.map((mj) => (
-                 <div key={mj.id} className="w-full border p-2">
-                   <h5 className="font-bold mb-1 border-b pb-1 text-[11px] text-center">C. Kendala Keuangan & Natura ({mj.nama})</h5>
-                   <ul className="list-disc pl-4 space-y-0.5 text-[10px]">
-                      {Array.isArray(kendalainfosWabend) && kendalainfosWabend.filter(k => k.mataJemaat === mj.nama && k.text).map((k, i) => <li key={`bk-${i}`}>{k.text}</li>)}
-                      {Array.isArray(kendalainfosWabend1) && kendalainfosWabend1.filter(k => k.mataJemaat === mj.nama && k.text).map((k, i) => <li key={`bn-${i}`}>{k.text}</li>)}
-                      
-                      {(!Array.isArray(kendalainfosWabend) || !kendalainfosWabend.some(k => k.mataJemaat === mj.nama && k.text)) && (!Array.isArray(kendalainfosWabend1) || !kendalainfosWabend1.some(k => k.mataJemaat === mj.nama && k.text)) && (
-                         <li className="text-gray-400 list-none">[-]</li>
-                      )}
-                   </ul>
-                 </div>
-               ))}
-             </div>
+             {/* POIN 9: Sembunyikan bagian Kendala Wabend jika sepenuhnya kosong */}
+             {hasKendalaWabend && (
+               <div className="grid grid-cols-2 gap-2 break-inside-avoid mt-4">
+                 {mataJemaatList.map((mj) => {
+                   const wBendKendala = [...(kendalainfosWabend || []), ...(kendalainfosWabend1 || [])].filter(k => k.mataJemaat === mj.nama && k.text?.trim() !== '');
+                   if (wBendKendala.length === 0) return null; // Sembunyikan box spesifik jika kosong
+                   
+                   return (
+                     <div key={mj.id} className="w-full border p-2">
+                       <h5 className="font-bold mb-1 border-b pb-1 text-[11px] text-center">C. Kendala Keuangan & Natura ({mj.nama})</h5>
+                       <ul className="list-disc pl-4 space-y-0.5 text-[10px]">
+                          {wBendKendala.map((k, i) => <li key={`bn-${i}`}>{k.text}</li>)}
+                       </ul>
+                     </div>
+                   );
+                 })}
+               </div>
+             )}
           </section>
 
           <section className="pt-4 break-inside-avoid">
             <h4 className="font-bold border-b border-gray-300 pb-1 mb-3 text-sm">5. PEMBAHASAN PROGRAM & WARNA SARI</h4>
             
             <div className="mb-4">
-              <h5 className="font-bold mb-1">A. Pembahasan Program</h5>
-              <ol className="list-decimal pl-5 space-y-1">
-                {Array.isArray(pembahasanList) && pembahasanList.map((item, idx) => ( item.pembahasan || item.keputusan ? <li key={`prog-${idx}`}><strong>Pembahasan:</strong> {item.pembahasan || '-'} <br/> <strong>Keputusan:</strong> {item.keputusan || '-'}</li> : null ))}
+              <h5 className="font-bold mb-2">A. Pembahasan Program</h5>
+              <ol className="list-decimal pl-5 space-y-3">
+                {Array.isArray(pembahasanList) && pembahasanList.map((item, idx) => {
+                  // POIN 10: Mapping struktur Judul, Array Rincian, dan Keputusan
+                  if (!item.judul && !item.keputusan) return null;
+                  return (
+                    <li key={`prog-${idx}`}>
+                      <strong className="text-gray-900">{item.judul || 'Tanpa Judul'}</strong>
+                      
+                      {Array.isArray(item.rincianPembahasan) && item.rincianPembahasan.some(r => r.teks?.trim() !== '') && (
+                        <ul className="list-disc pl-5 mt-1 mb-1.5 space-y-0.5">
+                          {item.rincianPembahasan.filter(r => r.teks?.trim() !== '').map((r) => (
+                            <li key={r.id} className="text-gray-700">{r.teks}</li>
+                          ))}
+                        </ul>
+                      )}
+                      
+                      <div className="mt-1">
+                        <strong>Keputusan:</strong> {item.keputusan || '-'}
+                      </div>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
             
-             <div>
-              <h5 className="font-bold mb-1">B. Warna Sari</h5>
-              <ol className="list-decimal pl-5 space-y-1">
-                {Array.isArray(warnaSariList) && warnaSariList.map((item, idx) => ( item.pembahasan || item.keputusan ? <li key={`war-${idx}`}><strong>Info:</strong> {item.pembahasan || '-'} <br/> <strong>Tindak Lanjut:</strong> {item.keputusan || '-'}</li> : null ))}
+             <div className="mt-4">
+              <h5 className="font-bold mb-2">B. Warna Sari</h5>
+              <ol className="list-decimal pl-5 space-y-3">
+                {Array.isArray(warnaSariList) && warnaSariList.map((item, idx) => {
+                  // POIN 10: Mapping struktur Judul, Array Rincian, dan Keputusan untuk Warna Sari
+                  if (!item.judulWarnaSari && !item.keputusan) return null;
+                  return (
+                    <li key={`war-${idx}`}>
+                      <strong className="text-gray-900">{item.judulWarnaSari || 'Tanpa Judul'}</strong>
+                      
+                      {Array.isArray(item.pembahasanWarnaSari) && item.pembahasanWarnaSari.some(r => r.teks?.trim() !== '') && (
+                        <ul className="list-disc pl-5 mt-1 mb-1.5 space-y-0.5">
+                          {item.pembahasanWarnaSari.filter(r => r.teks?.trim() !== '').map((r) => (
+                            <li key={r.id} className="text-gray-700">{r.teks}</li>
+                          ))}
+                        </ul>
+                      )}
+                      
+                      <div className="mt-1">
+                        <strong>Tindak Lanjut:</strong> {item.keputusan || '-'}
+                      </div>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           </section>
