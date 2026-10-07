@@ -9,7 +9,8 @@ export default function DataRapat({
   pembahasanList, setPembahasanList, warnaSariList, setWarnaSariList,
   tanggalRapat, setTanggalRapat, tempatRapat, setTempatRapat,
   pelayanPA, setPelayanPA, bacaanPA, setBacaanPA, temaPA, setTemaPA,
-  kehadiranMajelis, setKehadiranMajelis
+  kehadiranMajelis, setKehadiranMajelis,
+  laporanRutin, setLaporanRutin, periodeBulan // Penambahan props baru
 }) {
   const [activeTab, setActiveTab] = useState('info');
   
@@ -120,7 +121,10 @@ export default function DataRapat({
           {/* FIELDSET (Akan mengunci semua input di dalamnya jika isLocked = true) */}
           <fieldset disabled={isLocked} className="border-none p-0 m-0 min-w-0 transition-opacity duration-200" style={{ opacity: isLocked && userRole === 'admin' ? 0.7 : 1 }}>
             {activeTab === 'info' && <FormDataRapat tanggalRapat={tanggalRapat} setTanggalRapat={setTanggalRapat} tempatRapat={tempatRapat} setTempatRapat={setTempatRapat} pelayanPA={pelayanPA} setPelayanPA={setPelayanPA} bacaanPA={bacaanPA} setBacaanPA={setBacaanPA} temaPA={temaPA} setTemaPA={setTemaPA} kehadiranMajelis={kehadiranMajelis} setKehadiranMajelis={setKehadiranMajelis} />}
-            {activeTab === 'rutin' && <LaporanRutin />}
+            
+            {/* Pelemparan props baru ke dalam komponen LaporanRutin */}
+            {activeTab === 'rutin' && <LaporanRutin laporanRutin={laporanRutin} setLaporanRutin={setLaporanRutin} periodeBulan={periodeBulan} />}
+            
             {activeTab === 'bahas' && <PembahasanProgram pembahasanList={pembahasanList} setPembahasanList={setPembahasanList} />}
             {activeTab === 'warna' && <WarnaSari warnaSariList={warnaSariList} setWarnaSariList={setWarnaSariList} />}
           </fieldset>

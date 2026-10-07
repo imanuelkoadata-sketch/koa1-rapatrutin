@@ -27,8 +27,8 @@ export default function WakilSekretaris1({
       { baseId: 'kematian', label: 'Buku Kematian' }, { baseId: 'mimbar', label: 'Buku Pelayanan Mimbar' },
       { baseId: 'doa', label: 'Buku Pokok Doa' }, { baseId: 'induk', label: 'Buku Induk Jemaat' },
       { baseId: 'atestasi', label: 'Buku Atestasi Masuk Keluar' }, { baseId: 'anggota_majelis', label: 'Buku Anggota Majelis' },
-      { baseId: 'tamu', label: 'Buku Tamu', khusus: 'Imanuel Koa' },
-      { baseId: 'ekspedisi', label: 'Buku Ekspedisi Masuk Keluar', khusus: 'Imanuel Koa' }
+      { baseId: 'tamu', label: 'Buku Tamu' },
+      { baseId: 'ekspedisi', label: 'Buku Ekspedisi Masuk Keluar' }
     ];
 
     let isUpdated = false;

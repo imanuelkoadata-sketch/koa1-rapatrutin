@@ -52,9 +52,14 @@ function App() {
   
   const [kehadiranMajelis, setKehadiranMajelis] = useState([]);
   
-  // PERBAIKAN POIN 5 & 6: Menyesuaikan struktur state dengan form rincian dinamis
   const [pembahasanList, setPembahasanList] = useState([{ id: 1, judul: '', rincianPembahasan: [{ id: Date.now(), teks: '' }], keputusan: '' }]);
   const [warnaSariList, setWarnaSariList] = useState([{ id: 2, judulWarnaSari: '', pembahasanWarnaSari: [{ id: Date.now()+1, teks: '' }], keputusan: '' }]);
+
+  // ===== TAMBAHAN STATE BARU: LAPORAN RUTIN =====
+  const [laporanRutin, setLaporanRutin] = useState({
+    "Imanuel Koa": [{ id: Date.now(), program: '', uraian: '' }],
+    "Syalom Haususu": [{ id: Date.now() + 1, program: '', uraian: '' }]
+  });
 
   const [kehadiranWK, setKehadiranWK] = useState([]);
   const [kegiatanWilayah, setKegiatanWilayah] = useState([{ id: 1, tanggal: '', kegiatan: '' }]);
@@ -71,15 +76,15 @@ function App() {
   const [kendalainfosWasek, setKendalainfosWasek] = useState(['']);
   const [pemimpinKebaktian, setPemimpinKebaktian] = useState([]);
   
-  // PERBAIKAN POIN 7: Menambahkan Buku Tamu & Buku Ekspedisi khusus Imanuel Koa
+  // PERBAIKAN: Menghapus batas khusus agar 12 buku merata
   const [bukuAdmin, setBukuAdmin] = useState([
     { id: 'baptis', label: 'Buku Baptis', checked: false }, { id: 'sidi', label: 'Buku Sidi', checked: false },
     { id: 'nikah', label: 'Buku Nikah', checked: false }, { id: 'kelahiran', label: 'Buku Kelahiran', checked: false },
     { id: 'kematian', label: 'Buku Kematian', checked: false }, { id: 'mimbar', label: 'Buku Pelayanan Mimbar', checked: false },
     { id: 'doa', label: 'Buku Pokok Doa', checked: false }, { id: 'induk', label: 'Buku Induk Jemaat', checked: false },
     { id: 'atestasi', label: 'Buku Atestasi Masuk Keluar', checked: false }, { id: 'anggota_majelis', label: 'Buku Anggota Majelis', checked: false },
-    { id: 'tamu', label: 'Buku Tamu', checked: false, khusus: 'Imanuel Koa' },
-    { id: 'ekspedisi', label: 'Buku Ekspedisi Masuk Keluar', checked: false, khusus: 'Imanuel Koa' }
+    { id: 'tamu', label: 'Buku Tamu', checked: false },
+    { id: 'ekspedisi', label: 'Buku Ekspedisi Masuk Keluar', checked: false }
   ]);
   
   const [kendalainfosWasek1, setKendalainfosWasek1] = useState(['']);
@@ -146,6 +151,10 @@ function App() {
           if (d.kehadiranMajelis) setKehadiranMajelis(d.kehadiranMajelis);
           if (d.pembahasanList) setPembahasanList(d.pembahasanList);
           if (d.warnaSariList) setWarnaSariList(d.warnaSariList);
+          
+          // MENGAMBIL DATA LAPORAN RUTIN
+          if (d.laporanRutin) setLaporanRutin(d.laporanRutin);
+
           if (d.kehadiranWK) setKehadiranWK(d.kehadiranWK);
           if (d.kegiatanWilayah) setKegiatanWilayah(d.kegiatanWilayah);
           if (d.kegiatanMataJemaat) setKegiatanMataJemaat(d.kegiatanMataJemaat);
@@ -172,11 +181,15 @@ function App() {
           setTanggalRapat(periodeBulan + '-01');
           setPelayanPA(''); setBacaanPA(''); setTemaPA('');
           setKehadiranMajelis([]); 
-          
-          // PERBAIKAN POIN 5 & 6: Struktur kosong saat tidak ada data (Reset)
           setPembahasanList([{ id: 1, judul: '', rincianPembahasan: [{ id: Date.now(), teks: '' }], keputusan: '' }]);
           setWarnaSariList([{ id: 2, judulWarnaSari: '', pembahasanWarnaSari: [{ id: Date.now()+1, teks: '' }], keputusan: '' }]);
           
+          // RESET LAPORAN RUTIN
+          setLaporanRutin({
+            "Imanuel Koa": [{ id: Date.now(), program: '', uraian: '' }],
+            "Syalom Haususu": [{ id: Date.now() + 1, program: '', uraian: '' }]
+          });
+
           setKehadiranWK([]);
           setKegiatanWilayah([{ id: 1, tanggal: '', kegiatan: '' }]);
           setKegiatanMataJemaat([{ id: 2, tanggal: '', kegiatan: '' }]);
@@ -243,12 +256,15 @@ function App() {
     try {
       const rawData = {
         tanggalRapat, tempatRapat, pelayanPA, bacaanPA, temaPA, kehadiranMajelis, pembahasanList, warnaSariList,
+        laporanRutin, // <--- Data Laporan Rutin ikut dikirim
         kehadiranWK, kegiatanWilayah, kegiatanMataJemaat, pelaksanaanRapatMJ, agendasMJ, keputusansMJ, kendalainfosWK,
         kehadiranJemaat, realisasiPelayanan, persembahanWasek, pelayananKhusus, kendalainfosWasek, pemimpinKebaktian, bukuAdmin, kendalainfosWasek1,
         kasKeuangan, saldoLaluNatura, penerimaanNatura, pengeluaranNatura, sisaSaldoNatura, kendalainfosWabend, kendalainfosWabend1
       };
       const cleanData = JSON.parse(JSON.stringify(rawData));
-      await setDoc(doc(db, "laporan_evaluasi", periodeBulan), cleanData);
+      
+      // MENGGUNAKAN MERGE: TRUE AGAR DATA TIDAK SALING TIMPA
+      await setDoc(doc(db, "laporan_evaluasi", periodeBulan), cleanData, { merge: true });
       alert(`Puji Tuhan! Laporan Evaluasi Pelayanan untuk bulan [${periodeBulan}] berhasil aman tersimpan.`);
     } catch (err) { 
       console.error(err);
@@ -280,6 +296,9 @@ function App() {
             tanggalRapat={tanggalRapat} setTanggalRapat={setTanggalRapat} tempatRapat={tempatRapat} setTempatRapat={setTempatRapat}
             pelayanPA={pelayanPA} setPelayanPA={setPelayanPA} bacaanPA={bacaanPA} setBacaanPA={setBacaanPA} temaPA={temaPA} setTemaPA={setTemaPA}
             kehadiranMajelis={kehadiranMajelis} setKehadiranMajelis={setKehadiranMajelis}
+            
+            // LEMPAR PROPS KE DATA RAPAT
+            laporanRutin={laporanRutin} setLaporanRutin={setLaporanRutin} periodeBulan={periodeBulan}
           />
         )}
         

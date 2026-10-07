@@ -1,44 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase'; 
 
-export default function LaporanRutin() {
+export default function LaporanRutin({ laporanRutin, setLaporanRutin, periodeBulan }) {
   const mataJemaatList = ['Imanuel Koa', 'Syalom Haususu'];
   const [activeMj, setActiveMj] = useState(mataJemaatList[0]);
   
-  // State dipisah berdasarkan Mata Jemaat agar data tidak tercampur saat pindah tab/dropdown
-  const [laporanState, setLaporanState] = useState({
-    "Imanuel Koa": [{ id: Date.now(), program: '', uraian: '' }],
-    "Syalom Haususu": [{ id: Date.now() + 1, program: '', uraian: '' }]
-  });
-
-  // Helper untuk mendapatkan list yang sedang aktif
-  const currentList = laporanState[activeMj] || [];
+  // Baca data langsung dari App.jsx (props)
+  const currentList = laporanRutin?.[activeMj] || [];
 
   const tambahBaris = () => {
-    setLaporanState(prev => ({
+    setLaporanRutin(prev => ({
       ...prev,
-      [activeMj]: [...prev[activeMj], { id: Date.now(), program: '', uraian: '' }]
+      [activeMj]: [...(prev[activeMj] || []), { id: Date.now(), program: '', uraian: '' }]
     }));
   };
 
   const hapusBaris = (id) => {
-    setLaporanState(prev => ({
+    setLaporanRutin(prev => ({
       ...prev,
       [activeMj]: prev[activeMj].filter(item => item.id !== id)
     }));
   };
 
   const updateBaris = (id, field, value) => {
-    setLaporanState(prev => ({
+    setLaporanRutin(prev => ({
       ...prev,
       [activeMj]: prev[activeMj].map(item => item.id === id ? { ...item, [field]: value } : item)
     }));
   };
 
-  const handleSimpan = () => {
-    // Di sini logika simpan ke Firestore (Online Murni) akan dieksekusi
-    // Menyimpan khusus untuk data 'activeMj'
-    console.log(`Menyimpan data Laporan Rutin untuk ${activeMj}:`, laporanState[activeMj]);
-    alert(`Data Laporan Rutin ${activeMj} berhasil disiapkan untuk dikirim ke Cloud!`);
+  const handleSimpan = async () => {
+    // Validasi pencegahan error jika periodeBulan belum ter-load
+    if (!periodeBulan) {
+      alert("Tunggu sebentar, sedang memuat periode laporan...");
+      return;
+    }
+
+    try {
+      const docRef = doc(db, "laporan_evaluasi", periodeBulan); 
+      
+      // Simpan menggunakan setDoc merge agar tidak menghapus tab/data lain
+      await setDoc(docRef, {
+        laporanRutin: laporanRutin 
+      }, { merge: true });
+      
+      alert(`Data Laporan Rutin ${activeMj} berhasil disimpan ke Cloud!`);
+    } catch (error) {
+      console.error("Gagal menyimpan Laporan Rutin:", error);
+      alert("Terjadi kesalahan saat menyimpan data ke Firestore.");
+    }
   };
 
   return (
